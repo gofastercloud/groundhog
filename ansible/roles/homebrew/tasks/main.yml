@@ -1,0 +1,105 @@
+---
+# homebrew — Install packages using Brewfiles (single source of truth).
+# Order:
+#   1. homebrew/.Brewfile         (public core defaults)
+#   2. custom/Brewfile            (optional private overlay)
+#   3. homebrew/.Brewfile.local   (optional per-machine overrides)
+
+- name: Update Homebrew
+  community.general.homebrew:
+    update_homebrew: true
+  when: homebrew_update | bool
+  tags: ['maintenance']
+
+- name: Check optional Brewfiles (custom/Brewfile and .Brewfile.local)
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ dotfiles_dir }}/custom/Brewfile"
+    - "{{ dotfiles_dir }}/homebrew/.Brewfile.local"
+  register: homebrew_extra_brewfiles
+
+- name: Build list of active Brewfiles
+  ansible.builtin.set_fact:
+    homebrew_active_brewfiles: >-
+      {{ [dotfiles_dir ~ '/homebrew/.Brewfile']
+         + (homebrew_extra_brewfiles.results
+            | selectattr('stat.exists')
+            | map(attribute='item')
+            | list) }}
+
+- name: Read Mac App Store entries across active Brewfiles
+  ansible.builtin.set_fact:
+    homebrew_mas_apps: >-
+      {{ homebrew_active_brewfiles
+         | map('ansible.builtin.file')
+         | map('regex_findall', '(?m)^mas "([^"]+)", id: ([0-9]+)$')
+         | sum(start=[]) }}
+
+- name: Install non-MAS packages from active Brewfiles
+  ansible.builtin.command:
+    cmd: "brew bundle install --no-upgrade --file={{ item }}"
+  environment:
+    HOMEBREW_BUNDLE_MAS_SKIP: "{{ homebrew_mas_apps | map('last') | join(' ') }}"
+  loop: "{{ homebrew_active_brewfiles }}"
+  loop_control:
+    label: "{{ item | relpath(dotfiles_dir) }}"
+  register: homebrew_brew_bundle
+  changed_when: "'Installing' in homebrew_brew_bundle.stdout or 'Upgrading' in homebrew_brew_bundle.stdout"
+  failed_when: homebrew_brew_bundle.rc != 0
+
+- name: Check Mac App Store receipts
+  ansible.builtin.stat:
+    path: "/Applications/{{ item.0 }}.app/Contents/_MASReceipt/receipt"
+  loop: "{{ homebrew_mas_apps }}"
+  loop_control:
+    label: "{{ item.0 }}"
+  register: homebrew_mas_receipts
+  when: homebrew_mas_apps | length > 0
+
+- name: Install missing Mac App Store applications
+  ansible.builtin.command:
+    cmd: "mas install {{ item.item.1 }}"
+  loop: "{{ homebrew_mas_receipts.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.0 }}"
+  when:
+    - homebrew_mas_apps | length > 0
+    - not item.stat.exists
+  changed_when: true
+
+- name: Verify Mac App Store receipts
+  ansible.builtin.stat:
+    path: "/Applications/{{ item.0 }}.app/Contents/_MASReceipt/receipt"
+  loop: "{{ homebrew_mas_apps }}"
+  loop_control:
+    label: "{{ item.0 }}"
+  register: homebrew_mas_receipts_verified
+  when: homebrew_mas_apps | length > 0
+
+- name: Require installed Mac App Store receipts
+  ansible.builtin.assert:
+    that: item.stat.exists
+    fail_msg: "Mac App Store application is missing: {{ item.item.0 }} ({{ item.item.1 }})"
+  loop: "{{ homebrew_mas_receipts_verified.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.0 }}"
+  when: homebrew_mas_apps | length > 0
+
+- name: Verify non-MAS packages across active Brewfiles
+  ansible.builtin.command:
+    cmd: "brew bundle check --no-upgrade --file={{ item }}"
+  environment:
+    HOMEBREW_BUNDLE_MAS_SKIP: "{{ homebrew_mas_apps | map('last') | join(' ') }}"
+  loop: "{{ homebrew_active_brewfiles }}"
+  loop_control:
+    label: "{{ item | relpath(dotfiles_dir) }}"
+  changed_when: false
+  check_mode: false
+
+- name: Cleanup old versions
+  ansible.builtin.command:
+    cmd: brew cleanup --prune=7
+  changed_when: false
+  when: homebrew_cleanup | bool
+  tags: ['maintenance']

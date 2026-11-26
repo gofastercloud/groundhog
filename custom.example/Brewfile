@@ -1,0 +1,8 @@
+# Personal Homebrew packages, casks, Mac App Store apps, and extra VS Code extensions.
+# Installed automatically by Ansible after homebrew/.Brewfile.
+
+# Examples:
+# brew "awscli"
+# cask "claude-code@latest"
+# cask "steam"
+# mas "Xcode", id: 497799835

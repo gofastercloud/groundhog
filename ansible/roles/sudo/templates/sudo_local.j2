@@ -1,0 +1,30 @@
+# Managed by Ansible (roles/sudo). Do not edit by hand: changes are overwritten.
+#
+# /etc/pam.d/sudo_local is the Apple-supported place to extend sudo; it is
+# included by /etc/pam.d/sudo and survives macOS upgrades. The order below
+# matters (PAM evaluates top to bottom):
+#   1. pam_reattach  (optional)   lets Touch ID work inside tmux/screen
+#   2. pam_immurok   (sufficient) immurok fingerprint key, when its cask is installed
+#   3. pam_u2f       (sufficient) YubiKey touch, only when a key is registered
+#   4. pam_tid       (sufficient) Touch ID, laptops only
+#
+# The immurok installer also appends its own line here; rendering it from the
+# template keeps it in a fixed place instead of wherever the installer put it.
+#
+# RECOVERY: this file is optional. If sudo ever misbehaves, open a root shell
+# (su, single-user/recovery mode, or an already-open "sudo -s" session) and run
+#   rm /etc/pam.d/sudo_local
+# to restore the default sudo behaviour. Ansible keeps timestamped backups of
+# previous versions next to this file.
+{% if sudo_pam_reattach_present %}
+auth       optional       {{ sudo_brew_prefix }}/opt/pam-reattach/lib/pam/pam_reattach.so
+{% endif %}
+{% if sudo_immurok_present %}
+auth       sufficient     /usr/local/lib/pam/pam_immurok.so
+{% endif %}
+{% if sudo_yubikey_active %}
+auth       sufficient     {{ sudo_brew_prefix }}/opt/pam-u2f/lib/pam/pam_u2f.so cue
+{% endif %}
+{% if machine_profile == 'laptop' %}
+auth       sufficient     pam_tid.so
+{% endif %}

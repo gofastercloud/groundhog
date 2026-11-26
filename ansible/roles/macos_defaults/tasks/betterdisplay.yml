@@ -1,0 +1,37 @@
+---
+# ============================================================
+# BetterDisplay — portable shortcuts and update/privacy preferences
+# ============================================================
+# Display-specific bindings (monitor model, displayTagID, DDC input slot) and
+# licence keys are hardware/machine-specific and deliberately left unmanaged.
+- name: Check whether BetterDisplay is installed
+  ansible.builtin.stat:
+    path: /Applications/BetterDisplay.app
+  register: macos_defaults_betterdisplay_app
+
+- name: Configure BetterDisplay update and privacy preferences
+  community.general.osx_defaults:
+    domain: pro.betterdisplay.BetterDisplay
+    key: "{{ item.key }}"
+    type: bool
+    value: "{{ item.value }}"
+  loop:
+    - {key: SUEnableAutomaticChecks, value: true}
+    - {key: SUAutomaticallyUpdate, value: true}
+    - {key: SUSendProfileInfo, value: false}
+  loop_control:
+    label: "{{ item.key }}={{ item.value }}"
+  when: macos_defaults_betterdisplay_app.stat.exists
+
+- name: Configure BetterDisplay keyboard shortcuts
+  community.general.osx_defaults:
+    domain: pro.betterdisplay.BetterDisplay
+    key: "{{ item.key }}"
+    type: string
+    value: "{{ item.value }}"
+  loop: "{{ betterdisplay_shortcuts }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when:
+    - macos_defaults_betterdisplay_app.stat.exists
+    - betterdisplay_shortcuts | length > 0

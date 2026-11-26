@@ -1,0 +1,17 @@
+#!/bin/zsh
+#
+# Start the interactive shell for terminals (Ghostty, tmux panes).
+#
+# nu runs inside a zsh login shell so zsh/.zprofile still sets PATH,
+# Homebrew, JAVA_HOME, cargo and OrbStack. zsh stays the account's login
+# shell ($SHELL), so ssh, scripts and agents such as Claude Code keep zsh.
+#
+# Falls back to an interactive zsh when nu is not installed, or when
+# DOTFILES_SHELL=zsh is set (per session or in ~/.zshrc.local).
+
+exec "${SHELL:-/bin/zsh}" -l -c '
+  if [[ "${DOTFILES_SHELL:-nu}" == nu ]] && command -v nu >/dev/null 2>&1; then
+    exec nu
+  fi
+  exec "${SHELL:-/bin/zsh}" -l
+'

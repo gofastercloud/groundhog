@@ -1,0 +1,88 @@
+---
+# Power management via pmset.
+#
+# Read `pmset -g custom` once (no privileges needed), then only run `pmset -a`
+# (as root) for a setting when a reported value differs from the target.
+# `-a` writes both the Battery and AC profiles, so a setting counts as correct
+# only when every profile that reports it already has the target value. A
+# setting the machine does not report at all is left alone (unsupported).
+- name: Read current power settings
+  ansible.builtin.command:
+    cmd: pmset -g custom
+  register: macos_defaults_pmset
+  changed_when: false
+  check_mode: false
+
+# Desktop (Mac mini): never sleep, keep network alive, allow Wake on LAN.
+- name: "Desktop power settings"
+  when: machine_profile == 'desktop'
+  block:
+    - name: "Desktop: Prevent system sleep"
+      ansible.builtin.command:
+        cmd: pmset -a sleep 0
+      become: true
+      changed_when: true
+      when: macos_defaults_pmset.stdout | regex_findall('(?m)^\\s+sleep\\s+(\\S+)') | reject('equalto', '0') | list | length > 0
+
+    - name: "Desktop: Prevent disk sleep"
+      ansible.builtin.command:
+        cmd: pmset -a disksleep 0
+      become: true
+      changed_when: true
+      when: macos_defaults_pmset.stdout | regex_findall('(?m)^\\s+disksleep\\s+(\\S+)') | reject('equalto', '0') | list | length > 0
+
+    - name: "Desktop: Turn off displays after 15 minutes"
+      ansible.builtin.command:
+        cmd: pmset -a displaysleep 15
+      become: true
+      changed_when: true
+      when: macos_defaults_pmset.stdout | regex_findall('(?m)^\\s+displaysleep\\s+(\\S+)') | reject('equalto', '15') | list | length > 0
+
+    - name: "Desktop: Enable network during sleep"
+      ansible.builtin.command:
+        cmd: pmset -a networkoversleep 1
+      become: true
+      changed_when: true
+      when: macos_defaults_pmset.stdout | regex_findall('(?m)^\\s+networkoversleep\\s+(\\S+)') | reject('equalto', '1') | list | length > 0
+
+    - name: "Desktop: Enable Wake on LAN"
+      ansible.builtin.command:
+        cmd: pmset -a womp 1
+      become: true
+      changed_when: true
+      when: macos_defaults_pmset.stdout | regex_findall('(?m)^\\s+womp\\s+(\\S+)') | reject('equalto', '1') | list | length > 0
+
+    - name: "Desktop: Keep TCP connections alive during sleep"
+      ansible.builtin.command:
+        cmd: pmset -a tcpkeepalive 1
+      become: true
+      changed_when: true
+      when: macos_defaults_pmset.stdout | regex_findall('(?m)^\\s+tcpkeepalive\\s+(\\S+)') | reject('equalto', '1') | list | length > 0
+
+# Laptop: do not keep the network alive during sleep, no Wake on LAN.
+- name: "Laptop power settings"
+  when: machine_profile == 'laptop'
+  block:
+    - name: "Laptop: Disable network access during sleep"
+      ansible.builtin.command:
+        cmd: pmset -a networkoversleep 0
+      become: true
+      changed_when: true
+      when: macos_defaults_pmset.stdout | regex_findall('(?m)^\\s+networkoversleep\\s+(\\S+)') | reject('equalto', '0') | list | length > 0
+
+    - name: "Laptop: Disable Wake on LAN"
+      ansible.builtin.command:
+        cmd: pmset -a womp 0
+      become: true
+      changed_when: true
+      when: macos_defaults_pmset.stdout | regex_findall('(?m)^\\s+womp\\s+(\\S+)') | reject('equalto', '0') | list | length > 0
+
+    - name: "Laptop: Disable TCP keepalive on battery sleep"
+      ansible.builtin.command:
+        cmd: pmset -b tcpkeepalive 0
+      become: true
+      changed_when: true
+      when: >-
+        macos_defaults_pmset.stdout.split('AC Power:')[0]
+        | regex_findall('(?m)^\\s+tcpkeepalive\\s+(\\S+)')
+        | reject('equalto', '0') | list | length > 0

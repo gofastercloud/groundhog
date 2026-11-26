@@ -1,0 +1,33 @@
+---
+# ============================================================
+# OrbStack — container & Linux VM defaults (applied when CLI is initialised)
+# ============================================================
+- name: Check whether OrbStack CLI is available
+  ansible.builtin.command:
+    cmd: which orb
+  register: macos_defaults_orb_bin
+  changed_when: false
+  check_mode: false
+  failed_when: macos_defaults_orb_bin.rc not in [0, 1]
+
+- name: Read current OrbStack settings
+  ansible.builtin.command:
+    cmd: "orb config get {{ item.key }}"
+  loop: "{{ orbstack_config | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  register: macos_defaults_orb_current
+  changed_when: false
+  check_mode: false
+  when: macos_defaults_orb_bin.rc == 0
+
+- name: Apply OrbStack settings
+  ansible.builtin.command:
+    cmd: "orb config set {{ item.item.key }} {{ item.item.value }}"
+  loop: "{{ macos_defaults_orb_current.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.key }}={{ item.item.value }}"
+  when:
+    - macos_defaults_orb_bin.rc == 0
+    - (item.stdout | default('') | trim) != (item.item.value | string)
+  changed_when: true

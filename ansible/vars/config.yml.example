@@ -1,0 +1,35 @@
+---
+# config.yml — Per-machine overrides (git-ignored).
+# Copy this file to ansible/vars/config.yml (or put shared personal overrides in
+# custom/config.yml) to override any variable from ansible/vars/default.config.yml.
+
+# Enable optional hardware or inbound SSH modules:
+# remote_login_enabled: true
+# mosh_enabled: true
+# yubikey_enabled: true
+# immurok_enabled: true
+
+# Force a power/Touch ID profile instead of auto-detecting battery presence:
+# machine_profile: "laptop"   # or "desktop"
+
+# Override OrbStack settings (see default.config.yml for all keys):
+# orbstack_config:
+#   app.start_at_login: "false"
+#   data_allow_backup: "false"
+#   docker.expose_ports_to_lan: "false"
+#   machines.expose_ports_to_lan: "false"
+#   k8s.enable: "false"
+#   power.pause_in_sleep: "true"
+#   rosetta: "true"
+#   ssh.expose_port: "false"
+
+# Skip BetterDisplay custom DDC shortcuts (or define your own):
+# betterdisplay_shortcuts: []
+
+# Customise Dock apps:
+# dock_apps:
+#   - /System/Applications/Mail.app
+#   - /Applications/Google Chrome.app
+#   - /Applications/Visual Studio Code.app
+#   - /Applications/Ghostty.app
+#   - /System/Applications/System Settings.app

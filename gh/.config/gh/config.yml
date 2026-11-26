@@ -1,0 +1,17 @@
+# GitHub CLI configuration
+version: 1
+# Use SSH for git operations (SSH keys managed separately)
+git_protocol: ssh
+# Interactive prompts enabled
+prompt: enabled
+prefer_editor_prompt: disabled
+# Use system pager
+pager:
+# Aliases
+aliases:
+    co: pr checkout
+# Use terminal colors for labels
+color_labels: enabled
+accessible_colors: disabled
+accessible_prompter: disabled
+spinner: enabled

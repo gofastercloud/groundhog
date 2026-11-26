@@ -1,0 +1,43 @@
+---
+# ============================================================
+# Shottr — screenshot shortcuts & preferences (replaces macOS screenshot hotkeys)
+# ============================================================
+# Note: Shottr is sandboxed (~/Library/Containers/cc.ffitch.shottr/), so the
+# terminal running Ansible must hold Full Disk Access for these writes to apply.
+- name: Check whether Shottr is installed
+  ansible.builtin.stat:
+    path: /Applications/Shottr.app
+  register: macos_defaults_shottr_app
+
+- name: Configure Shottr shortcuts (Cmd+Shift+3/4/5 and OCR)
+  community.general.osx_defaults:
+    domain: cc.ffitch.shottr
+    key: "{{ item.key }}"
+    type: string
+    value: "{{ item.value }}"
+  loop:
+    - {key: KeyboardShortcuts_fullscreen, value: '{"carbonKeyCode":20,"carbonModifiers":768}'}
+    - {key: KeyboardShortcuts_area, value: '{"carbonKeyCode":21,"carbonModifiers":768}'}
+    - {key: KeyboardShortcuts_scrolling, value: '{"carbonKeyCode":23,"carbonModifiers":768}'}
+    - {key: KeyboardShortcuts_ocr, value: '{"carbonKeyCode":31,"carbonModifiers":6400}'}
+  loop_control:
+    label: "{{ item.key }}"
+  when: macos_defaults_shottr_app.stat.exists
+
+- name: Configure Shottr behaviour and disable telemetry
+  community.general.osx_defaults:
+    domain: cc.ffitch.shottr
+    key: "{{ item.key }}"
+    type: "{{ item.type }}"
+    value: "{{ item.value }}"
+  loop:
+    - {key: afterGrabCopy, type: bool, value: true}
+    - {key: afterGrabSave, type: bool, value: false}
+    - {key: afterGrabShow, type: bool, value: false}
+    - {key: copyOnEsc, type: bool, value: true}
+    - {key: showMenubarIcon, type: int, value: 0}
+    - {key: showIntro, type: int, value: 0}
+    - {key: allowTelemetry, type: bool, value: false}
+  loop_control:
+    label: "{{ item.key }}={{ item.value }}"
+  when: macos_defaults_shottr_app.stat.exists

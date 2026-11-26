@@ -1,0 +1,97 @@
+---
+# ============================================================
+# Remote Login (SSH and Mosh)
+# ============================================================
+# systemsetup needs root, and on recent macOS the terminal running Ansible must
+# also hold Full Disk Access (System Settings > Privacy & Security); without it
+# systemsetup refuses to read or change Remote Login.
+- name: Read Remote Login state
+  ansible.builtin.command:
+    cmd: systemsetup -getremotelogin
+  become: true
+  register: macos_defaults_remote_login
+  changed_when: false
+  check_mode: false
+  failed_when: "macos_defaults_remote_login.stdout is not search('Remote Login: (On|Off)')"
+
+- name: Enable Remote Login (SSH)
+  ansible.builtin.command:
+    cmd: systemsetup -setremotelogin on
+  become: true
+  register: macos_defaults_remote_login_on
+  changed_when: true
+  failed_when: "'Full Disk Access' in macos_defaults_remote_login_on.stdout"
+  when:
+    - remote_login_enabled | bool
+    - "'Remote Login: On' not in macos_defaults_remote_login.stdout"
+
+- name: Disable Remote Login (SSH)
+  ansible.builtin.command:
+    cmd: systemsetup -setremotelogin off
+  become: true
+  register: macos_defaults_remote_login_off
+  changed_when: true
+  failed_when: "'Full Disk Access' in macos_defaults_remote_login_off.stdout"
+  when:
+    - not (remote_login_enabled | bool)
+    - "'Remote Login: Off' not in macos_defaults_remote_login.stdout"
+
+- name: Allow SSH through application firewall
+  ansible.builtin.command:
+    cmd: /usr/libexec/ApplicationFirewall/socketfilterfw --add /usr/sbin/sshd
+  become: true
+  changed_when: false
+  when: remote_login_enabled | bool
+
+- name: Unblock SSH in application firewall
+  ansible.builtin.command:
+    cmd: /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp /usr/sbin/sshd
+  become: true
+  changed_when: false
+  when: remote_login_enabled | bool
+
+- name: Resolve Homebrew Mosh server path
+  ansible.builtin.command:
+    cmd: brew --prefix mosh
+  register: macos_defaults_mosh_prefix
+  changed_when: false
+  check_mode: false
+  when: remote_login_enabled | bool and mosh_enabled | bool
+
+- name: Allow Mosh server through application firewall
+  ansible.builtin.command:
+    cmd: /usr/libexec/ApplicationFirewall/socketfilterfw --add {{ macos_defaults_mosh_prefix.stdout }}/bin/mosh-server
+  become: true
+  changed_when: false
+  when: remote_login_enabled | bool and mosh_enabled | bool
+
+- name: Unblock Mosh server in application firewall
+  ansible.builtin.command:
+    cmd: /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp {{ macos_defaults_mosh_prefix.stdout }}/bin/mosh-server
+  become: true
+  changed_when: false
+  when: remote_login_enabled | bool and mosh_enabled | bool
+
+- name: Harden sshd config (PQC KEX, AEAD ciphers, key-only auth)
+  ansible.builtin.template:
+    src: sshd-hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/050-hardening.conf
+    mode: "0644"
+  become: true
+  notify: Restart sshd
+  when: remote_login_enabled | bool
+
+- name: Remove legacy sshd hardening drop-in superseded by 050-hardening.conf
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config.d/200-hardening.conf
+    state: absent
+  become: true
+  notify: Restart sshd
+  when: remote_login_enabled | bool
+
+- name: Validate sshd configuration
+  ansible.builtin.command:
+    cmd: /usr/sbin/sshd -t
+  become: true
+  changed_when: false
+  when: remote_login_enabled | bool

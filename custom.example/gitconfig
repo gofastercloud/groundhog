@@ -1,0 +1,6 @@
+# Personal git identity (linked to ~/.gitconfig.custom via custom/links.conf).
+# Machine-specific overrides still belong in ~/.gitconfig.local.
+#
+# [user]
+# 	name = Your Name
+# 	email = you@example.com

@@ -1,0 +1,45 @@
+---
+# ============================================================
+# Default file handlers (duti) — open code/text files in VS Code
+# ============================================================
+- name: Check whether VS Code is installed
+  ansible.builtin.stat:
+    path: /Applications/Visual Studio Code.app
+  register: macos_defaults_vscode_app
+
+- name: Check whether duti is installed
+  ansible.builtin.command:
+    cmd: which duti
+  register: macos_defaults_duti_bin
+  changed_when: false
+  check_mode: false
+  failed_when: macos_defaults_duti_bin.rc not in [0, 1]
+
+# Only bind UTIs and extensions declared by VS Code's Info.plist: macOS
+# LaunchServices rejects dynamic (dyn.*) UTIs with error -50.
+- name: Bind code and text file extensions to VS Code via duti
+  ansible.builtin.shell: |
+    set -euo pipefail
+    changed=0
+    for uti in public.plain-text public.source-code; do
+      if ! duti -d "$uti" 2>/dev/null | grep -qx "com.microsoft.VSCode"; then
+        duti -s com.microsoft.VSCode "$uti" all
+        changed=1
+      fi
+    done
+    for ext in md json yaml yml toml py ts tsx js jsx sh zsh lua rs go txt log ini xml css sql; do
+      if ! duti -x "$ext" 2>/dev/null | grep -qx "com.microsoft.VSCode"; then
+        duti -s com.microsoft.VSCode ".$ext" all
+        changed=1
+      fi
+    done
+    if [ "$changed" -eq 1 ]; then
+      echo "CHANGED"
+    fi
+  args:
+    executable: /bin/bash
+  register: macos_defaults_duti
+  changed_when: "'CHANGED' in macos_defaults_duti.stdout"
+  when:
+    - macos_defaults_vscode_app.stat.exists
+    - macos_defaults_duti_bin.rc == 0

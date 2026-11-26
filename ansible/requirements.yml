@@ -1,0 +1,8 @@
+---
+# requirements.yml — Install with:
+#   ansible-galaxy collection install -r requirements.yml --upgrade
+# Only collections are needed. community.general provides osx_defaults (used
+# throughout) and homebrew; 13.2.0 is well above the minimum for both.
+collections:
+  - name: community.general
+    version: "13.2.0"

@@ -1,0 +1,25 @@
+#!/bin/zsh
+
+set -eu
+
+# GUI-launched Ghostty does not reliably inherit Homebrew's shell PATH.
+if [[ -d /opt/homebrew/bin ]]; then
+  PATH="/opt/homebrew/bin:${PATH:-}"
+fi
+if [[ -d /usr/local/bin ]]; then
+  PATH="/usr/local/bin:$PATH"
+fi
+export PATH
+
+shell_cmd="$HOME/.local/bin/interactive-shell"
+[[ -x "$shell_cmd" ]] || shell_cmd="${SHELL:-/bin/zsh}"
+
+if [[ -n "${TMUX:-}" ]]; then
+  exec "$shell_cmd" -l
+fi
+
+if command -v tmux >/dev/null 2>&1; then
+  exec tmux new-session -A -s main
+fi
+
+exec "$shell_cmd" -l

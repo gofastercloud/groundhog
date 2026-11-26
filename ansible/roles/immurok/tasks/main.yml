@@ -1,0 +1,32 @@
+---
+# immurok — app preferences for the immurok fingerprint key.
+#
+# The key is used for screen unlock, sudo and Apple Passwords only. SSH keys
+# live on the Yubikey, so the app's SSH agent and Quick Fill stay off. The app
+# ships with both on by default, and turning the agent on also repoints the
+# session's SSH_AUTH_SOCK at ~/.immurok/agent.sock.
+#
+# These are plain UserDefaults, read when the app starts. To switch the agent
+# off on a running app, use its Settings toggle once: that also restores
+# SSH_AUTH_SOCK, which writing the default alone cannot do.
+#
+# The CLI switch is left alone: strong sudo authentication (`imk pam-key
+# install`) goes through the same socket.
+
+- name: Check whether immurok is installed
+  ansible.builtin.stat:
+    path: /Applications/immurok.app
+  register: immurok_app
+
+- name: Set immurok app preferences
+  community.general.osx_defaults:
+    domain: com.immurok.app
+    key: "{{ item.key }}"
+    type: bool
+    value: "{{ item.value }}"
+  loop:
+    - {key: immurok.sshAgentEnabled, value: false}
+    - {key: immurok.quickFillEnabled, value: false}
+  loop_control:
+    label: "{{ item.key }}={{ item.value }}"
+  when: immurok_app.stat.exists

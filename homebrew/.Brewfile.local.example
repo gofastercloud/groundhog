@@ -1,0 +1,11 @@
+# Machine-specific Brewfile
+# Copy this to .Brewfile.local and customize for your machine
+# .Brewfile.local is gitignored and won't be committed
+#
+# Usage:
+#   brew bundle install --file=homebrew/.Brewfile.local
+
+# Mac mini specific packages (example)
+cask "elgato-control-center"        # Elgato device control
+
+# Add other machine-specific packages here

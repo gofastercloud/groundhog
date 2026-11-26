@@ -1,0 +1,101 @@
+# Set user.name and user.email in custom/gitconfig (~/.gitconfig.custom)
+# or per-machine ~/.gitconfig.local.
+[user]
+	signingkey = ~/.ssh/id_secretive_sign.pub
+
+[commit]
+	gpgsign = true
+	verbose = true
+
+[tag]
+	gpgsign = true
+	sort = -version:refname
+
+[gpg]
+	format = ssh
+
+[gpg "ssh"]
+	allowedSignersFile = ~/.ssh/allowed_signers
+
+[init]
+	defaultBranch = main
+
+[core]
+	editor = nvim
+	pager = delta
+	fsmonitor = true
+	untrackedCache = true
+
+[interactive]
+	diffFilter = delta --color-only
+
+[delta]
+	navigate = true
+	line-numbers = true
+	side-by-side = false
+	syntax-theme = Catppuccin Mocha
+
+[merge]
+	conflictstyle = zdiff3
+
+[diff]
+	colorMoved = default
+	algorithm = histogram
+	mnemonicPrefix = true
+
+[push]
+	autoSetupRemote = true
+	followTags = true
+
+[fetch]
+	prune = true
+	writeCommitGraph = true
+
+[rebase]
+	autoStash = true
+	updateRefs = true
+
+[branch]
+	sort = -committerdate
+
+[rerere]
+	enabled = true
+
+[column]
+	ui = auto
+
+[help]
+	autocorrect = prompt
+
+[alias]
+	lg = log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+	st = status -sb
+	co = checkout
+	br = branch
+	ci = commit
+	unstage = reset HEAD --
+	last = log -1 HEAD
+	dft = -c diff.external=difft diff
+
+[pull]
+	rebase = true
+
+# Private overlay overrides (linked from custom/gitconfig when present)
+[include]
+	path = ~/.gitconfig.custom
+
+# Machine-specific overrides (e.g. different signing key)
+[include]
+	path = ~/.gitconfig.local
+
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+[credential "https://github.com"]
+	helper = 
+	helper = !/opt/homebrew/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = 
+	helper = !/opt/homebrew/bin/gh auth git-credential

@@ -1,0 +1,123 @@
+---
+# ============================================================
+# Finder tweaks
+# ============================================================
+- name: Show all file extensions
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: AppleShowAllExtensions
+    type: bool
+    value: true
+  notify: Restart Finder
+
+- name: Show hidden files
+  community.general.osx_defaults:
+    domain: com.apple.finder
+    key: AppleShowAllFiles
+    type: bool
+    value: true
+  notify: Restart Finder
+
+- name: Show path bar
+  community.general.osx_defaults:
+    domain: com.apple.finder
+    key: ShowPathbar
+    type: bool
+    value: true
+  notify: Restart Finder
+
+- name: Show status bar
+  community.general.osx_defaults:
+    domain: com.apple.finder
+    key: ShowStatusBar
+    type: bool
+    value: true
+  notify: Restart Finder
+
+- name: Default Finder to list view
+  community.general.osx_defaults:
+    domain: com.apple.finder
+    key: FXPreferredViewStyle
+    type: string
+    value: Nlsv
+  notify: Restart Finder
+
+- name: Default Finder search to current folder
+  community.general.osx_defaults:
+    domain: com.apple.finder
+    key: FXDefaultSearchScope
+    type: string
+    value: SCcf
+  notify: Restart Finder
+
+- name: Keep folders on top in Finder windows
+  community.general.osx_defaults:
+    domain: com.apple.finder
+    key: _FXSortFoldersFirst
+    type: bool
+    value: true
+  notify: Restart Finder
+
+- name: Hide recent tags in Finder sidebar
+  community.general.osx_defaults:
+    domain: com.apple.finder
+    key: ShowRecentTags
+    type: bool
+    value: false
+  notify: Restart Finder
+
+- name: Disable .DS_Store on network volumes
+  community.general.osx_defaults:
+    domain: com.apple.desktopservices
+    key: DSDontWriteNetworkStores
+    type: bool
+    value: true
+  notify: Restart Finder
+
+- name: Disable .DS_Store on USB drives
+  community.general.osx_defaults:
+    domain: com.apple.desktopservices
+    key: DSDontWriteUSBStores
+    type: bool
+    value: true
+  notify: Restart Finder
+
+- name: New Finder window opens home dir
+  community.general.osx_defaults:
+    domain: com.apple.finder
+    key: NewWindowTarget
+    type: string
+    value: PfHm
+  notify: Restart Finder
+
+- name: Disable warning when changing file extension
+  community.general.osx_defaults:
+    domain: com.apple.finder
+    key: FXEnableExtensionChangeWarning
+    type: bool
+    value: false
+  notify: Restart Finder
+
+- name: Disable warning before emptying Trash
+  community.general.osx_defaults:
+    domain: com.apple.finder
+    key: WarnOnEmptyTrash
+    type: bool
+    value: false
+  notify: Restart Finder
+
+- name: Enable spring loading for directories
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: com.apple.springing.enabled
+    type: bool
+    value: true
+  notify: Restart Finder
+
+- name: Fast spring loading delay
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: com.apple.springing.delay
+    type: float
+    value: 0.2
+  notify: Restart Finder

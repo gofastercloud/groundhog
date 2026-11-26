@@ -1,0 +1,43 @@
+---
+# Handlers are notified by tasks that actually changed a default, so Finder,
+# Dock and SystemUIServer only restart when needed. killall exits 1 when the
+# process is not running, which is fine.
+- name: Restart sshd
+  ansible.builtin.command:
+    cmd: launchctl kickstart -k system/com.openssh.sshd
+  become: true
+  changed_when: true
+
+- name: Restart Finder
+  ansible.builtin.command:
+    cmd: killall Finder
+  register: macos_defaults_restart_finder
+  changed_when: macos_defaults_restart_finder.rc == 0
+  failed_when: macos_defaults_restart_finder.rc not in [0, 1]
+
+- name: Restart Dock
+  ansible.builtin.command:
+    cmd: killall Dock
+  register: macos_defaults_restart_dock
+  changed_when: macos_defaults_restart_dock.rc == 0
+  failed_when: macos_defaults_restart_dock.rc not in [0, 1]
+
+- name: Restart SystemUIServer
+  ansible.builtin.command:
+    cmd: killall SystemUIServer
+  register: macos_defaults_restart_systemuiserver
+  changed_when: macos_defaults_restart_systemuiserver.rc == 0
+  failed_when: macos_defaults_restart_systemuiserver.rc not in [0, 1]
+
+- name: Restart ControlCenter
+  ansible.builtin.command:
+    cmd: killall ControlCenter
+  register: macos_defaults_restart_controlcenter
+  changed_when: macos_defaults_restart_controlcenter.rc == 0
+  failed_when: macos_defaults_restart_controlcenter.rc not in [0, 1]
+
+# Make the settings daemon re-read com.apple.symbolichotkeys without a logout.
+- name: Apply symbolic hotkeys
+  ansible.builtin.command:
+    cmd: /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
+  changed_when: true

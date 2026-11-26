@@ -1,0 +1,131 @@
+---
+# sudo — Configure PAM for sudo authentication.
+#
+# Laptops get TouchID (pam_tid.so) for convenient sudo.
+# Desktops skip TouchID (no hardware) to avoid duplicate prompts.
+# Optional extras, added only when their module is installed:
+#   - pam_reattach (Touch ID inside tmux)
+#   - pam_u2f (YubiKey) when yubikey_sudo_enabled and ~/.config/Yubico/u2f_keys exists
+#   - pam_immurok (immurok fingerprint key) when the immurok cask has installed it
+#
+# Also sets the sudo credential cache (sudo_timestamp_timeout) via a validated
+# /etc/sudoers.d drop-in, and warns if immurok is wired into sudo without its
+# strong-auth key (without it, any process running as you can impersonate the
+# immurok app on ~/.immurok/pam.sock and pass sudo).
+#
+# Everything is rendered from a single template, templates/sudo_local.j2, into
+# /etc/pam.d/sudo_local (the Apple-recommended place to customise sudo; it
+# survives macOS upgrades). One template means the line order never depends on
+# which task ran last. The template module writes a temporary file and renames
+# it into place atomically, which also copes with macOS provenance metadata
+# that can block in-place writes.
+#
+# Safety: a light validate hook rejects anything that is not a comment, blank
+# line or an optional/sufficient auth line, and backup keeps the previous
+# version. sudo_local is optional: deleting it restores default sudo (see the
+# recovery note at the top of the template). The yubikey role re-runs this role
+# so registering a key activates it.
+
+- name: Check PAM only references modules that exist
+  # macOS PAM fails closed: one missing module path, even on a "sufficient"
+  # line, stops sudo and the admin password dialog from working at all. A
+  # half-finished `brew upgrade` of a PAM-providing cask does exactly that.
+  # Runs without become (the files are world-readable), so it still explains
+  # the problem when sudo is already broken.
+  ansible.builtin.shell: |
+    set -eu
+    missing=0
+    for f in /etc/pam.d/sudo /etc/pam.d/sudo_local /etc/pam.d/authorization; do
+      [ -f "$f" ] || continue
+      for mod in $(awk '!/^[[:space:]]*#/ { for (i = 1; i <= NF; i++) if ($i ~ /^\/.*\.so$/) print $i }' "$f"); do
+        if [ ! -f "$mod" ]; then
+          echo "$f loads $mod, which does not exist"
+          missing=1
+        fi
+      done
+    done
+    exit "$missing"
+  changed_when: false
+  check_mode: false
+
+- name: Resolve Homebrew prefix for PAM modules
+  ansible.builtin.command:
+    cmd: brew --prefix
+  register: sudo_brew_prefix_cmd
+  changed_when: false
+  check_mode: false
+
+- name: Look up optional PAM modules and YubiKey registration
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ sudo_brew_prefix_cmd.stdout }}/opt/pam-reattach/lib/pam/pam_reattach.so"
+    - "{{ sudo_brew_prefix_cmd.stdout }}/opt/pam-u2f/lib/pam/pam_u2f.so"
+    - "{{ home_dir }}/.config/Yubico/u2f_keys"
+    - /usr/local/lib/pam/pam_immurok.so
+    - "/etc/immurok/pam/{{ ansible_facts['user_uid'] }}.key"
+  register: sudo_pam_stats
+
+- name: Work out which PAM lines to render
+  ansible.builtin.set_fact:
+    sudo_brew_prefix: "{{ sudo_brew_prefix_cmd.stdout }}"
+    sudo_pam_reattach_present: "{{ (machine_profile == 'laptop' and sudo_pam_stats.results[0].stat.exists) | bool }}"
+    sudo_immurok_present: "{{ ((immurok_enabled | default(false) | bool) and sudo_pam_stats.results[3].stat.exists) | bool }}"
+    sudo_immurok_strong: "{{ sudo_pam_stats.results[4].stat.exists | bool }}"
+    sudo_yubikey_active: >-
+      {{ ((yubikey_enabled | default(false) | bool)
+         and sudo_pam_stats.results[1].stat.exists
+         and sudo_pam_stats.results[2].stat.exists) | bool }}
+
+- name: Install /etc/pam.d/sudo_local
+  ansible.builtin.template:
+    src: sudo_local.j2
+    dest: /etc/pam.d/sudo_local
+    owner: root
+    group: wheel
+    mode: "0444"
+    backup: true
+    validate: "/usr/bin/awk '!/^(#|[[:space:]]*$)/ && !/^auth[[:space:]]+(optional|sufficient)[[:space:]]/ { exit 1 }' %s"
+  become: true
+
+- name: Warn when immurok sudo runs without its strong-auth key
+  ansible.builtin.debug:
+    msg: >-
+      pam_immurok is in sudo_local but /etc/immurok/pam/{{ ansible_facts['user_uid'] }}.key
+      is missing, so sudo trusts a bare "OK" on ~/.immurok/pam.sock. Turn on strong
+      sudo authentication in the immurok app (Settings), then re-run this role.
+  when: sudo_immurok_present and not sudo_immurok_strong
+
+- name: Set the sudo credential cache timeout
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/timeout
+    content: |
+      # Managed by Ansible (roles/sudo). Minutes sudo caches credentials; 0 = ask every time.
+      Defaults timestamp_timeout={{ sudo_timestamp_timeout }}
+    owner: root
+    group: wheel
+    mode: "0440"
+    validate: /usr/sbin/visudo -cf %s
+  become: true
+
+- name: Re-check PAM module paths after rendering sudo_local
+  # macOS PAM fails closed: one missing module path, even on a "sufficient"
+  # line, stops sudo and the admin password dialog from working at all. A
+  # half-finished `brew upgrade` of a PAM-providing cask does exactly that.
+  # Runs without become (the files are world-readable), so it still explains
+  # the problem when sudo is already broken.
+  ansible.builtin.shell: |
+    set -eu
+    missing=0
+    for f in /etc/pam.d/sudo /etc/pam.d/sudo_local /etc/pam.d/authorization; do
+      [ -f "$f" ] || continue
+      for mod in $(awk '!/^[[:space:]]*#/ { for (i = 1; i <= NF; i++) if ($i ~ /^\/.*\.so$/) print $i }' "$f"); do
+        if [ ! -f "$mod" ]; then
+          echo "$f loads $mod, which does not exist"
+          missing=1
+        fi
+      done
+    done
+    exit "$missing"
+  changed_when: false
+  check_mode: false

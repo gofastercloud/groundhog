@@ -1,0 +1,16 @@
+---
+# Private overlay overrides (loaded after ansible/vars/default.config.yml).
+
+# Enable optional hardware or inbound SSH modules:
+# remote_login_enabled: true
+# mosh_enabled: true
+# yubikey_enabled: true
+# immurok_enabled: true
+
+# Customise your Dock layout:
+# dock_apps:
+#   - /System/Applications/Mail.app
+#   - /Applications/Google Chrome.app
+#   - /Applications/Visual Studio Code.app
+#   - /Applications/Ghostty.app
+#   - /System/Applications/System Settings.app

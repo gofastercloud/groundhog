@@ -1,0 +1,58 @@
+# Ghostty Configuration
+
+########################
+# Look and feel
+########################
+
+# Theme
+theme = Catppuccin Mocha
+
+# Font - Nerd Font for prompt glyphs
+font-family = IoskeleyMonoTerm Nerd Font Mono
+font-size = 15
+
+# Padding so the text is not glued to the edges
+window-padding-x = 8
+window-padding-y = 6
+
+# Cursor
+cursor-style = block
+
+# Prevent bold text from shifting colors (cleaner with Catppuccin)
+bold-is-bright = false
+
+########################
+# Behaviour
+########################
+
+# Reasonable scrollback
+scrollback-limit = 20000
+
+# Copy on select
+copy-on-select = true
+
+# Treat Option as Alt/Meta so tmux (Alt+arrows), Nushell (Alt+c), and emacs word jumps work
+macos-option-as-alt = true
+
+# Tmux owns session persistence; do not nag when closing a Ghostty surface
+confirm-close-surface = false
+
+# Allow OSC 52 clipboard writes from tmux and remote SSH/Mosh sessions
+clipboard-write = allow
+
+# Hide mouse cursor while typing
+mouse-hide-while-typing = true
+
+# Tmux owns terminal/session state; do not restore a stale shell surface.
+window-save-state = never
+
+# Start every Ghostty surface (first window included) in the shared tmux session.
+# Use `shell:` so $HOME expands portably without hardcoding a username; the wrapper
+# keeps non-Ghostty shells and nested tmux sessions untouched.
+command = shell:exec "$HOME/.local/bin/ghostty-tmux"
+
+########################
+# Keybinds
+########################
+
+keybind = shift+enter=text:\x1b\r

@@ -1,0 +1,123 @@
+---
+# dev_tools — Configure tools that stow doesn't manage.
+#
+# REMOVED (now managed elsewhere):
+#   - git config       → git/.gitconfig (stow)
+#   - ghostty config   → ghostty/.config/ghostty/config (stow)
+#   - aws config       → aws/.aws/config (manual symlink)
+#   - starship config  → (user uses oh-my-posh, not starship)
+#   - vscode           → vscode/Library/Application Support/Code/User (stow)
+
+# ============================================================
+# Python — uv config (project venvs only, no global pollution)
+# These small policy files are managed and audited by Ansible.
+# ============================================================
+- name: Ensure uv config dir
+  ansible.builtin.file:
+    path: "{{ home_dir }}/.config/uv"
+    state: directory
+    mode: "0755"
+
+- name: Write uv config
+  ansible.builtin.template:
+    dest: "{{ home_dir }}/.config/uv/uv.toml"
+    mode: "0644"
+    src: uv.toml.j2
+
+# Prevent pip from installing outside of a virtualenv
+- name: Ensure pip.conf dir
+  ansible.builtin.file:
+    path: "{{ home_dir }}/.config/pip"
+    state: directory
+    mode: "0755"
+
+- name: Write pip.conf to require virtualenv
+  ansible.builtin.template:
+    dest: "{{ home_dir }}/.config/pip/pip.conf"
+    mode: "0644"
+    src: pip.conf.j2
+
+# ============================================================
+# Project Node & runtimes — mise config. Homebrew may install Node as a
+# dependency of CLI tools; mise shims sit ahead of Homebrew on PATH.
+# ============================================================
+- name: Ensure mise config dir
+  ansible.builtin.file:
+    path: "{{ home_dir }}/.config/mise"
+    state: directory
+    mode: "0755"
+
+- name: Write mise global config
+  ansible.builtin.template:
+    dest: "{{ home_dir }}/.config/mise/config.toml"
+    mode: "0644"
+    src: mise.toml.j2
+
+- name: Create npm config (mise manages prefix — do not set it here)
+  ansible.builtin.template:
+    dest: "{{ home_dir }}/.npmrc"
+    mode: "0644"
+    src: npmrc.j2
+
+- name: Check for missing mise runtimes
+  ansible.builtin.command:
+    cmd: mise ls --missing --global
+  register: dev_tools_mise_missing
+  changed_when: false
+  check_mode: false
+
+- name: Install configured runtimes via mise
+  ansible.builtin.command:
+    cmd: mise install --yes
+  register: dev_tools_mise_install
+  changed_when: dev_tools_mise_missing.stdout | trim != ''
+  when: dev_tools_mise_missing.stdout | trim != ''
+
+- name: Upgrade mise runtimes during explicit maintenance
+  ansible.builtin.command:
+    cmd: mise upgrade --yes
+  register: dev_tools_mise_upgrade
+  changed_when: "'upgraded' in (dev_tools_mise_upgrade.stdout ~ dev_tools_mise_upgrade.stderr) | lower"
+  when: mise_update_tools | bool
+  tags: ['maintenance']
+
+- name: Ensure user bin dir
+  ansible.builtin.file:
+    path: "{{ home_dir }}/.local/bin"
+    state: directory
+    mode: "0755"
+
+- name: Install interactive shell launcher (nu, with zsh fallback)
+  ansible.builtin.template:
+    dest: "{{ home_dir }}/.local/bin/interactive-shell"
+    mode: "0755"
+    src: interactive-shell.j2
+
+- name: Install Ghostty tmux launcher
+  ansible.builtin.template:
+    dest: "{{ home_dir }}/.local/bin/ghostty-tmux"
+    mode: "0755"
+    src: ghostty-tmux.j2
+
+# Clean up legacy NVM links left behind from before the mise migration.
+- name: Check for legacy NVM tool symlinks in ~/.local/bin
+  ansible.builtin.stat:
+    path: "{{ home_dir }}/.local/bin/{{ item }}"
+  loop: ['node', 'npm', 'npx', 'corepack']
+  register: dev_tools_legacy_nvm_links
+
+- name: Remove legacy NVM tool symlinks in ~/.local/bin
+  ansible.builtin.file:
+    path: "{{ item.stat.path }}"
+    state: absent
+  loop: "{{ dev_tools_legacy_nvm_links.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when:
+    - item.stat.islnk | default(false)
+    - "'/.nvm/' in (item.stat.lnk_source | default(''))"
+
+- name: Remove legacy Ansible-managed ~/.nvmrc
+  ansible.builtin.file:
+    path: "{{ home_dir }}/.nvmrc"
+    state: absent

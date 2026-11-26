@@ -1,0 +1,50 @@
+---
+# dock — Wipe and rebuild the Dock. No recent apps. No app drawer.
+#
+# The rebuild only happens when the current Dock differs from `dock_apps`
+# (order matters) or still has "other" items (folders such as Applications or
+# Downloads). The Dock process is restarted by the "Restart Dock" handler
+# (roles/macos_defaults/handlers) only when something changed.
+
+- name: List current Dock items
+  ansible.builtin.command:
+    cmd: dockutil --list
+  register: dock_current
+  changed_when: false
+  check_mode: false
+
+# dockutil --list prints: label <TAB> file:// URL <TAB> section <TAB> plist <TAB> bundle id
+- name: Compare current Dock with the desired layout
+  ansible.builtin.set_fact:
+    dock_needs_rebuild: "{{ dock_current_apps != dock_desired_apps or dock_current_others | length > 0 }}"
+  vars:
+    dock_rows: "{{ dock_current.stdout_lines | map('split', '\t') | list }}"
+    dock_current_apps: >-
+      {{ dock_rows | selectattr('2', 'equalto', 'persistentApps')
+         | map(attribute='1') | map('regex_replace', '^file://(.*?)/?$', '\\1') | list }}
+    dock_current_others: "{{ dock_rows | selectattr('2', 'equalto', 'persistentOthers') | list }}"
+    dock_desired_apps: "{{ dock_apps | map('urlencode') | list }}"
+
+- name: Remove all Dock items
+  ansible.builtin.command:
+    cmd: dockutil --remove all --no-restart
+  changed_when: true
+  when: dock_needs_rebuild | bool
+  notify: Restart Dock
+
+- name: Add Dock apps
+  ansible.builtin.command:
+    cmd: "dockutil --add '{{ item }}' --no-restart"
+  loop: "{{ dock_apps }}"
+  changed_when: true
+  when: dock_needs_rebuild | bool
+  notify: Restart Dock
+
+# show-recents is set in macos_defaults. This only keeps running-app indicators on.
+- name: Show running-app indicators in Dock
+  community.general.osx_defaults:
+    domain: com.apple.dock
+    key: show-process-indicators
+    type: bool
+    value: true
+  notify: Restart Dock

@@ -1,0 +1,41 @@
+# Private personal overlay (separate git repo, e.g. groundhog-private)
+custom/
+
+# Machine-specific overrides
+homebrew/.Brewfile.local
+ansible/vars/config.yml
+gh/.config/gh/hosts.yml
+
+# Claude Code per-machine settings
+.claude/
+
+# macOS
+.DS_Store
+
+# Sensitive files (should never be committed)
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.jks
+*.env
+*.env.*
+*.secret
+.secrets
+id_rsa*
+id_ed25519
+credentials.json
+service-account*.json
+
+# VS Code: track only the user settings and keybindings, never its storage
+vscode/**
+!vscode/**/
+!vscode/Library/Application Support/Code/User/settings.json
+!vscode/Library/Application Support/Code/User/keybindings.json
+
+# Nushell runtime state (stowed with --no-folding, but never track these)
+nushell/**/history.sqlite3*
+nushell/**/vendor/
+nushell/**/local.nu
+nushell/**/plugin.msgpackz

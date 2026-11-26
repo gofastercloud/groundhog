@@ -1,0 +1,19 @@
+# Atuin: only settings that differ from the defaults are set here.
+# Full list of options and their defaults: https://docs.atuin.sh/configuration/config/
+# (or run `atuin config print` / `atuin config get -r <key>`).
+
+# Local-only history; no sync server.
+auto_sync = false
+
+# Select with Enter to run immediately; Tab returns the command for editing.
+enter_accept = true
+
+# Keep obvious secrets out of history (in addition to the built-in secrets_filter).
+history_filter = [
+  '(?i)(^|\s)(export\s+)?[A-Z0-9_]*(TOKEN|API_KEY|SECRET|PASSWORD)=\S+',
+  '(?i)(--token|--api-key|--password|--secret)(=|\s+)\S+',
+]
+
+[sync]
+# Sync v2 (record-based). Kept explicit: it is only the default for new installs.
+records = true
