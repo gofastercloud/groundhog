@@ -9,7 +9,7 @@ async function initThreeScene() {
   if (!canvas) return;
 
   try {
-    const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js');
+    const THREE = await import('three');
 
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -142,11 +142,11 @@ async function initThreeScene() {
 const SCENES = {
   bootstrap: {
     caption: 'Fresh Mac → hardened workstation in one command',
-    copy: `git clone https://github.com/gofastercloud/groundhog.git ~/groundhog\ncd ~/groundhog\n./dotfiles.sh init-custom\nbash ansible/bootstrap.sh`,
+    copy: `git clone https://github.com/gofastercloud/groundhog.git ~/groundhog\ncd ~/groundhog\n./groundhog init-custom\nbash ansible/bootstrap.sh`,
     steps: [
       { type: 'cmd', prompt: '❯ ', text: 'git clone https://github.com/gofastercloud/groundhog.git ~/groundhog && cd ~/groundhog' },
       { type: 'out', cls: 't-muted', text: 'Cloning into \'groundhog\'... done.' },
-      { type: 'cmd', prompt: '❯ ', text: './dotfiles.sh init-custom' },
+      { type: 'cmd', prompt: '❯ ', text: './groundhog init-custom' },
       { type: 'out', cls: 't-ok', text: 'Initialised private overlay repo at: ~/groundhog/custom' },
       { type: 'cmd', prompt: '❯ ', text: 'bash ansible/bootstrap.sh' },
       { type: 'out', cls: 't-info', text: '==> Ensuring Xcode CLT, Homebrew, GNU Stow & Ansible... ✓' },
@@ -193,6 +193,24 @@ const SCENES = {
       { type: 'out', cls: 't-ok', text: 'Hi gofastercloud! You\'ve successfully authenticated (private key never left Secure Enclave).' },
       { type: 'cmd', prompt: '~/groundhog main ❯ ', text: 'git log -1 --show-signature' },
       { type: 'out', cls: 't-ok', text: 'Good "git" signature with ECDSA key (Secretive Secure Enclave)' },
+    ],
+  },
+  'install-app': {
+    caption: 'Agent loads skills/groundhog/SKILL.md to install apps declaratively & safely',
+    copy: `./groundhog check --tags "homebrew,dock"\n./groundhog ansible --tags "homebrew,dock"\nmake verify`,
+    steps: [
+      { type: 'cmd', prompt: 'agent ❯ ', text: 'read skills/groundhog/SKILL.md' },
+      { type: 'out', cls: 't-mauve', text: 'Loaded skill: groundhog (public core vs custom/ overlay + verify gates)' },
+      { type: 'out', cls: 't-info', text: 'Routing: brew "watchexec" → homebrew/.Brewfile (universal CLI)' },
+      { type: 'out', cls: 't-info', text: 'Routing: cask "linear-linear" → custom/Brewfile + custom/config.yml (dock_apps)' },
+      { type: 'cmd', prompt: '~/groundhog ❯ ', text: './groundhog check --tags "homebrew,dock"' },
+      { type: 'out', cls: 't-teal', text: 'Dry-run (--check --diff): +1 core formula, +1 custom cask, +1 Dock item' },
+      { type: 'cmd', prompt: '~/groundhog ❯ ', text: './groundhog ansible --tags "homebrew,dock"' },
+      { type: 'out', cls: 't-ok', text: 'TASK [homebrew : Install core + custom Brewfiles]  changed (watchexec, linear-linear)' },
+      { type: 'out', cls: 't-ok', text: 'TASK [dock : Configure Dock items]                 changed (+Linear.app)' },
+      { type: 'cmd', prompt: '~/groundhog ❯ ', text: 'make verify' },
+      { type: 'out', cls: 't-ok', text: '✓ gitleaks  ✓ ruff & ty  ✓ pytest (8 passed)  ✓ ansible-lint  ✓ verify-custom' },
+      { type: 'out', cls: 't-peach', text: 'make verify: all checks passed (zero personal data leaked to public groundhog)' },
     ],
   },
 };
@@ -276,6 +294,11 @@ document.getElementById('copy-scene-cmd')?.addEventListener('click', async (e) =
   await copyText(SCENES[currentScene].copy, e.target);
 });
 
+document.getElementById('watch-agent-install')?.addEventListener('click', () => {
+  const tab = document.querySelector('.term-tab[data-scene="install-app"]');
+  if (tab) tab.click();
+});
+
 /* ── 3. Interactive Layer Explorer ──────────────────────────────────────── */
 const LAYERS = {
   core: {
@@ -287,8 +310,9 @@ const LAYERS = {
 ├── zsh/ nushell/       # Login zsh + primary Nushell (gwt, agent-box, cplast, yy)
 ├── ghostty/ tmux/ nvim/# Catppuccin Mocha terminal & editor stack
 ├── ssh/.ssh/config     # Secretive Secure Enclave + ML-KEM-768 PQC-first template
-├── custom.example/     # Starter template copied by ./dotfiles.sh init-custom
-└── tests/test_setup.sh # Full verification suite (make verify)`,
+├── src/groundhog/      # Zero-dependency Python CLI & curses TUI (./groundhog)
+├── custom.example/     # Starter template copied by ./groundhog init-custom
+└── tests/              # pytest behavioural suite + config/Nushell checks (make verify)`,
     note: '✓ Safe to git pull upstream improvements forever — zero personal data touches this repo.',
   },
   custom: {
@@ -301,17 +325,16 @@ const LAYERS = {
 ├── links.conf          # Symlinks SSH hosts, authorized_keys, AWS, CLAUDE.md, GEMINI.md
 ├── copies.conf         # App-managed files seeded by link & saved by capture
 └── tasks.yml           # Optional custom Ansible tasks (--tags custom)`,
-    note: '✓ Run `./dotfiles.sh init-custom` once to scaffold and push your own private overlay.',
+    note: '✓ Run `./groundhog init-custom` once to scaffold and push your own private overlay.',
   },
   local: {
     title: '03 · Per-Machine Local Overrides (Untracked)',
-    desc: 'Machine-specific tweaks and sensitive runtime tokens that stay strictly on one Mac.',
+    desc: 'Machine-specific tweaks that stay strictly on one Mac.',
     tree: `ansible/vars/config.yml          # Machine-only Ansible variable overrides
 homebrew/.Brewfile.local         # Machine-only extra packages
 ~/.gitconfig.local               # Machine-only signing key or work email
 ~/.ssh/config.local              # Temporary or work-only SSH host entries
-~/.zshrc.local                   # One-off shell tweaks
-~/.config/private/secrets.env    # chmod 600 API keys (loaded only via with-secrets)`,
+~/.zshrc.local                   # One-off shell tweaks`,
     note: '✓ Highest precedence; never committed to either public or private Git repos.',
   },
 };

@@ -3,5 +3,7 @@
 # ignore-scripts blocks malicious preinstall/postinstall hooks by default
 # (run `npm rebuild` explicitly when a native addon genuinely needs it).
 ignore-scripts=true
+# Supply-chain cooldown: ignore npm packages published fewer than 7 days ago.
+min-release-age=7
 update-notifier=false
 fund=false

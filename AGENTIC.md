@@ -25,11 +25,11 @@ Add the matching casks to `custom/Brewfile` (for example `cask "claude-code@late
 
 ```nu
 cd ~/groundhog
-./dotfiles.sh ansible --tags "homebrew,agents,dev-tools"
+./groundhog ansible --tags "homebrew,agents,dev-tools"
 ```
 
 What those roles configure for you:
-- **Claude Code** (`roles/claude_code`): merges OS-level Seatbelt sandboxing (`sandbox.enabled: true`, `allowUnsandboxedCommands: false`), a secret-path deny list (`~/.ssh/**`, `~/.aws/**`, `~/.config/gh/**`, `~/.config/private/**`, `.env*`, `*.pem`, `*.key`, `git push --force`), and an automatic `ruff` formatter hook into `~/.claude/settings.json` without overwriting your existing plugins, theme, or model settings.
+- **Claude Code** (`roles/claude_code`): merges OS-level Seatbelt sandboxing (`sandbox.enabled: true`, `allowUnsandboxedCommands: false`), widened secret-path `Read`/`Edit`/`Write` deny rules (`~/.ssh/**`, `~/.aws/**`, `~/.config/gh/**`, `~/.gnupg/**`, `~/.config/private/**`, `.env*`, `*.pem`, `*.key`), destructive push blocks (`git push --force`, `--force-with-lease`, `+*`, `--delete`), and an automatic `ruff` formatter hook into `~/.claude/settings.json` without overwriting your existing plugins, theme, or model settings.
 - **Antigravity CLI** (`roles/antigravity`): writes `~/.gemini/antigravity-cli/settings.json` with templated `trustedWorkspaces` (no hardcoded home-directory paths).
 
 ## 2. Defence in depth (why deny lists alone are not enough)
@@ -39,8 +39,8 @@ Agent deny lists are helpful guardrails, not hard OS boundaries. A prompt-inject
 | Layer | What Groundhog enforces | Why it matters |
 |-------|-------------------------|----------------|
 | **Hardware-bound SSH** | [Secretive](https://github.com/maxgoedjen/secretive) Secure Enclave keys + `ForwardAgent no` | There is no `~/.ssh/id_ed25519` file on disk for an agent to exfiltrate. |
-| **Scoped secrets** | `~/.config/private/secrets.env` (`0600`) + `with-secrets` + `age` | Tokens stay out of your default shell environment and out of agent context windows. |
-| **Supply-chain locks** | `npmrc` `ignore-scripts=true`, `uv` + venv-only `pip`, `git` `fsckObjects=true`, `gitleaks`, `trufflehog`, `osv-scanner` | Stops malicious `postinstall` hooks and accidental secret commits when agents install dependencies. |
+| **Supply-chain cooldowns** | 7-day release delays in `uv` (`exclude-newer`), `mise` (`minimum_release_age`), and `npm` (`min-release-age`) + `npm` `ignore-scripts=true` + venv-only `pip` | Blocks freshly published supply-chain malware (TeamPCP-style attacks) and malicious `postinstall` hooks when agents install dependencies. |
+| **Git & secret hygiene** | Global Git `init.templateDir` Gitleaks hook, `pre-commit` + `pre-push` Gitleaks range scanning, `git` `fsckObjects=true`, `trufflehog`, `osv-scanner` | Every brand-new repo gets staged-secret protection automatically, and `--no-verify` commits are caught before push. |
 | **Container & host walls** | OrbStack LAN/SSH exposure off, macOS Firewall + Stealth Mode, 60s `sudo` cache (no `NOPASSWD`), `agent-box` | Keeps local services off the LAN and gives you a zero-credential sandbox on demand. |
 
 ## 3. Run parallel agents cleanly with `gwt` + `sesh`
@@ -66,7 +66,7 @@ If a repo has a `.worktreeinclude` file (one relative path per line, such as loc
 ## 4. Isolate untrusted repos with `agent-box`
 
 When you want to poke at an unfamiliar repository, test an autonomous loop, or run untrusted install scripts, drop into `agent-box` (`autoload/orb.nu`). It launches a disposable OrbStack container (`--rm`) with:
-- **Only** your current working directory mounted at `/workspace` (zero `~/.ssh`, `~/.aws`, `~/.config/private`, or host `$HOME` visibility)
+- **Only** your current working directory mounted at `/workspace` (zero `~/.ssh`, `~/.aws`, or host `$HOME` visibility)
 - `--cap-drop=ALL` and `--security-opt=no-new-privileges:true`
 - **Network disabled by default** (`--network=none`; pass `--net` only when outbound access is actually required)
 
@@ -80,6 +80,6 @@ agent-box --net --image python:3.14-slim
 
 ## 5. Secrets & MCP hygiene
 
-- **Never put live secrets in `.env` files inside agent workspaces.** Use `with-secrets <cmd>` for local commands, or encrypt at rest with `age` / `sops`. If you already use 1Password, `op run` / 1Password Environments pairs cleanly with this setup.
+- **Organise secrets outside Groundhog.** Groundhog deliberately avoids keeping a plaintext secrets file on disk. Use your preferred secrets manager (such as 1Password CLI `op run`, macOS Keychain, or `sops`/`age`) to inject credentials per command rather than exporting them globally or dropping live `.env` files inside agent workspaces.
 - **Prefer local CLIs over stacking MCP servers.** Tools like `gh`, `uv`, `ruff`, `ast-grep`, `jq`, `yq`, and `difftastic` burn far fewer context tokens than bloated MCP schemas and avoid running unpinned `npx -y` servers.
-- **Keep `AGENTS.md` in your repos.** Both `groundhog` and `custom.example/` include an `AGENTS.md` (with a `CLAUDE.md` `@AGENTS.md` pointer) so any agent knows your guardrails before touching a line of config.
+- **Keep `AGENTS.md` and `skills/groundhog/SKILL.md` wired up.** Both `groundhog` and `custom.example/` include `AGENTS.md` (with a `CLAUDE.md` `@AGENTS.md` pointer), and `skills/groundhog/SKILL.md` teaches any coding agent how to install apps, edit dotfiles, and verify changes declaratively. When `claude_code_enabled` or `antigravity_enabled` is on, Groundhog symlinks `skills/groundhog` straight into `~/.claude/skills/groundhog` and `~/.gemini/antigravity/skills/groundhog`.

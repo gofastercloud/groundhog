@@ -1,11 +1,16 @@
+default_install_hook_types: [pre-commit, pre-push]
+
 repos:
   - repo: local
     hooks:
+      # ── Fast pre-commit checks ─────────────────────────────────────
       - id: gitleaks
-        name: Detect hardcoded secrets
+        name: Detect hardcoded secrets (staged)
         entry: gitleaks git --staged --redact --no-banner
         language: system
         pass_filenames: false
+        stages: [pre-commit]
+
       # Shell .j2 templates (dev_tools/templates/*.j2) are deliberately excluded:
       # they are zsh scripts with Jinja markup, which ShellCheck cannot parse.
       # tests/test_setup.sh checks them with `zsh -n` instead.
@@ -13,14 +18,62 @@ repos:
         name: ShellCheck
         entry: shellcheck --severity=warning
         language: system
-        files: '^(dotfiles\.sh|scripts/.*\.sh|tests/.*\.sh|ansible/bootstrap\.sh|ansible/roles/.*/files/.*\.sh)$'
-      - id: ansible-lint
-        name: Ansible Lint
-        entry: env ANSIBLE_DEPRECATION_WARNINGS=0 ansible-lint
-        language: system
-        files: '^(ansible/.*\.yml|ansible/.*\.yaml)$'
+        files: '^(groundhog|dotfiles\.sh|ansible/bootstrap\.sh|(scripts|tests)/.*\.sh|git/\.config/git/template/hooks/.*)$'
+        stages: [pre-commit]
+
       - id: yamllint
         name: yamllint
         entry: yamllint
         language: system
         files: '^(\.pre-commit-config\.yaml|ansible/.*\.ya?ml|gh/.*\.ya?ml|lazygit/.*\.ya?ml)$'
+        stages: [pre-commit]
+
+      - id: ruff-check
+        name: Ruff lint
+        entry: ruff check
+        language: system
+        types: [python]
+        stages: [pre-commit]
+
+      - id: ruff-format
+        name: Ruff format check
+        entry: ruff format --check
+        language: system
+        types: [python]
+        stages: [pre-commit]
+
+      - id: ty-check
+        name: ty type check
+        entry: ty check src tests
+        language: system
+        pass_filenames: false
+        types: [python]
+        stages: [pre-commit]
+
+      - id: no-hardcoded-user-paths
+        name: Reject hardcoded /Users/<name> paths
+        entry: >-
+          bash -c '! git grep -InE --untracked "/Users/[A-Za-z0-9._-]+"
+          -- . ":(exclude)docs" ":(exclude)tests/test_setup.sh"
+          ":(exclude)tests/test_groundhog.py" ":(exclude)*lazy-lock.json"'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      # ── Thorough pre-push checks (local gate replacing paid CI) ────
+      - id: gitleaks-push
+        name: Detect hardcoded secrets across pushed commits
+        entry: >-
+          bash -c 'if git rev-parse --verify origin/main >/dev/null 2>&1;
+          then gitleaks git --log-opts="origin/main..HEAD" --redact --no-banner;
+          else gitleaks git --redact --no-banner; fi'
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: groundhog-verify
+        name: Full verification suite (make verify)
+        entry: make verify
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Global Git init template hook installed by Groundhog.
+# Automatically runs Gitleaks on staged changes for every brand-new repository.
+# Repositories that install `pre-commit` will replace this hook cleanly.
+set -euo pipefail
+
+if command -v gitleaks >/dev/null 2>&1; then
+    exec gitleaks git --staged --redact --no-banner
+fi

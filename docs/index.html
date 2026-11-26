@@ -14,6 +14,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
+    },
+    "integrity": {
+      "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js": "sha384-GY5FqjttLCFRt/McQbyaVdCk2O1IQtOeX8Py6NfD89BIAsIyJFRl4UgSXrk2vXAk"
+    }
+  }
+  </script>
 </head>
 <body>
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -26,10 +36,11 @@
       </a>
       <div class="nav-links">
         <a href="#demo">Live CLI</a>
+        <a href="#built-for-agents">Built for Agents</a>
         <a href="#layers">Overlay</a>
         <a href="#builder">Config Builder</a>
-        <a href="#security">Agentic Security</a>
-        <a href="https://github.com/gofastercloud/groundhog/blob/main/AGENTIC.md" target="_blank" rel="noopener">Agentic Guide</a>
+        <a href="#security">Security</a>
+        <a href="https://github.com/gofastercloud/groundhog/blob/main/skills/groundhog/SKILL.md" target="_blank" rel="noopener">SKILL.md</a>
         <a href="https://github.com/gofastercloud/groundhog" class="btn btn-sm btn-ghost" target="_blank" rel="noopener">GitHub ↗</a>
       </div>
     </nav>
@@ -100,6 +111,7 @@
             <button class="term-tab active" role="tab" aria-selected="true" data-scene="bootstrap">1. Fresh Bootstrap</button>
             <button class="term-tab" role="tab" aria-selected="false" data-scene="agentic">2. Parallel Agents</button>
             <button class="term-tab" role="tab" aria-selected="false" data-scene="pqc">3. PQC SSH + Secretive</button>
+            <button class="term-tab" role="tab" aria-selected="false" data-scene="install-app">4. Agent: Install App</button>
           </div>
           <div class="terminal-controls">
             <button id="speed-btn" class="ctrl-btn" title="Toggle playback speed">1x</button>
@@ -110,6 +122,68 @@
         <div class="terminal-footer">
           <span class="term-hint" id="term-caption">Ghostty · Nushell · oh-my-posh · Catppuccin Mocha</span>
           <button class="copy-btn" id="copy-scene-cmd">Copy commands</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Built for Agents -->
+    <section id="built-for-agents" class="section container">
+      <div class="section-head">
+        <span class="eyebrow">Built for Agents</span>
+        <h2>Hand your coding agent the keys — with guardrails</h2>
+        <p>Groundhog ships an Agent Skill (<code>skills/groundhog/SKILL.md</code>), repo-level <code>AGENTS.md</code> / <code>CLAUDE.md</code> instructions, a structured <code>./groundhog</code> CLI, and strict local verification gates so agents can install apps and evolve your Mac declaratively without ever leaking personal data.</p>
+      </div>
+
+      <div class="agent-showcase">
+        <div class="agent-flow-card">
+          <div class="agent-prompt">
+            <span class="agent-badge">Prompt</span>
+            <p>“Install Linear and <code>watchexec</code>, pin Linear to my Dock, and verify everything.”</p>
+          </div>
+
+          <ol class="agent-steps">
+            <li>
+              <span class="step-tag tag-mauve">1. Load Skill</span>
+              <span>Agent activates <code>skills/groundhog/SKILL.md</code> and checks the public-vs-private decision tree.</span>
+            </li>
+            <li>
+              <span class="step-tag tag-teal">2. Route Cleanly</span>
+              <span>Adds <code>cask "linear-linear"</code> + Dock entry to private <code>custom/</code>; puts universal CLI <code>brew "watchexec"</code> in public <code>homebrew/.Brewfile</code>.</span>
+            </li>
+            <li>
+              <span class="step-tag tag-peach">3. Dry-Run &amp; Apply</span>
+              <span>Previews changes with <code>./groundhog check --tags "homebrew,dock"</code>, then applies via <code>./groundhog ansible --tags "homebrew,dock"</code>.</span>
+            </li>
+            <li>
+              <span class="step-tag tag-green">4. Gate &amp; Verify</span>
+              <span>Runs strict <code>make verify</code> &amp; <code>./groundhog verify-custom</code> — zero regressions, zero <code>/Users/</code> leaks, signed commits only.</span>
+            </li>
+          </ol>
+
+          <div class="agent-actions">
+            <a href="#demo" class="btn btn-sm btn-secondary" id="watch-agent-install">Watch this in the terminal ↑</a>
+            <a href="https://github.com/gofastercloud/groundhog/blob/main/skills/groundhog/SKILL.md" class="btn btn-sm btn-ghost" target="_blank" rel="noopener">Read SKILL.md ↗</a>
+          </div>
+        </div>
+
+        <div class="agent-pillars">
+          <article class="bento-card accent-mauve">
+            <div class="card-icon">🧭</div>
+            <h3>First-Class <code>SKILL.md</code></h3>
+            <p>Auto-linked into <code>~/.claude/skills/groundhog</code> and <code>~/.gemini/antigravity/skills/groundhog</code> when those roles are enabled — works out of the box with Claude Code, Antigravity, Codex, and Cursor.</p>
+          </article>
+
+          <article class="bento-card accent-teal">
+            <div class="card-icon">🧪</div>
+            <h3>Impossible-to-Fake Local Gates</h3>
+            <p><code>make verify</code> fails loudly if any linter is missing, runs <code>pytest</code> behavioural tests against a temp <code>$HOME</code>, and <code>pre-push</code> scans the entire pushed commit range with Gitleaks.</p>
+          </article>
+
+          <div class="install-bar skill-install-bar">
+            <span class="prompt-chevron">❯</span>
+            <code id="skill-cmd">ln -sfn ~/groundhog/skills/groundhog ~/.claude/skills/groundhog</code>
+            <button class="copy-btn" data-copy-target="skill-cmd" aria-label="Copy skill symlink command">Copy</button>
+          </div>
         </div>
       </div>
     </section>
@@ -142,7 +216,7 @@
             <div class="layer-num">03</div>
             <div>
               <h3>Per-Machine Local (<code>*.local</code>)</h3>
-              <p>Untracked overrides for a single Mac — extra packages, per-Mac signing keys, and <code>0600</code> runtime secrets.</p>
+              <p>Untracked overrides for a single Mac — extra packages, per-Mac signing keys, and machine-only shell tweaks.</p>
             </div>
           </button>
         </div>
@@ -258,14 +332,14 @@
 
         <article class="bento-card accent-green">
           <div class="card-icon">⚡</div>
-          <h3>Single-Auth Ansible Helper</h3>
-          <p><code>./dotfiles.sh ansible</code> solves macOS Touch ID prompt spam without <code>NOPASSWD</code>: a <code>visudo</code>-checked temporary global ticket keeps workers authenticated, then deletes itself and runs <code>sudo -k</code> on exit.</p>
+          <h3>Python CLI &amp; curses TUI</h3>
+          <p>Zero-dependency <code>./groundhog</code> TUI and non-interactive CLI. Its <code>ansible</code> command avoids Touch ID prompt spam without <code>NOPASSWD</code> via a <code>visudo</code>-checked drop-in staged inside <code>/etc/sudoers.d/</code>, cleaned up with <code>sudo -k</code> on exit.</p>
         </article>
 
         <article class="bento-card accent-sky">
-          <div class="card-icon">🔑</div>
-          <h3>Scoped Runtime Secrets</h3>
-          <p>API tokens live in <code>~/.config/private/secrets.env</code> (<code>0600</code>) — never exported in shell profiles. Load them for one command via <code>with-secrets</code>, or encrypt at rest with <code>age</code>.</p>
+          <div class="card-icon">⏳</div>
+          <h3>7-Day Supply-Chain Cooldowns</h3>
+          <p><code>uv</code> (<code>exclude-newer</code>), <code>mise</code> (<code>minimum_release_age</code>), and <code>npm</code> (<code>min-release-age</code> + <code>ignore-scripts</code>) wait 7 days before adopting fresh packages, paired with a global Git Gitleaks init template.</p>
         </article>
       </div>
     </section>
@@ -274,7 +348,7 @@
     <section class="cta-banner container">
       <div class="cta-inner">
         <h2>Ready for your own Groundhog Day?</h2>
-        <p>Clone it, run <code>./dotfiles.sh init-custom</code>, and make your next fresh Mac setup boring in the best possible way.</p>
+        <p>Clone it, run <code>./groundhog init-custom</code>, and make your next fresh Mac setup boring in the best possible way.</p>
         <div class="hero-cta">
           <a href="https://github.com/gofastercloud/groundhog" class="btn btn-primary" target="_blank" rel="noopener">Get Groundhog on GitHub</a>
           <a href="https://github.com/gofastercloud/groundhog/blob/main/AGENTIC.md" class="btn btn-secondary" target="_blank" rel="noopener">Read AGENTIC.md</a>

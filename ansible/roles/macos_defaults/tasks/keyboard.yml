@@ -1,0 +1,153 @@
+---
+# keyboard.yml — Keyboard, trackpad, screenshots, and notification defaults.
+
+- name: Blazing key repeat rate
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: KeyRepeat
+    type: int
+    value: 2
+
+- name: Short delay until key repeat
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: InitialKeyRepeat
+    type: int
+    value: 15
+
+- name: Disable press-and-hold for accents (enable key repeat everywhere)
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: ApplePressAndHoldEnabled
+    type: bool
+    value: false
+
+- name: Disable auto-correct
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: NSAutomaticSpellingCorrectionEnabled
+    type: bool
+    value: false
+
+- name: Disable auto-capitalize
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: NSAutomaticCapitalizationEnabled
+    type: bool
+    value: false
+
+- name: Disable smart dashes
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: NSAutomaticDashSubstitutionEnabled
+    type: bool
+    value: false
+
+- name: Disable smart quotes
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: NSAutomaticQuoteSubstitutionEnabled
+    type: bool
+    value: false
+
+- name: Disable auto period substitution
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: NSAutomaticPeriodSubstitutionEnabled
+    type: bool
+    value: false
+
+- name: Enable Full Keyboard Access for all controls in dialogs
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: AppleKeyboardUIMode
+    type: int
+    value: 3
+
+- name: Allow dragging windows from anywhere with Ctrl+Cmd+Drag
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: NSWindowShouldDragOnGesture
+    type: bool
+    value: true
+
+- name: Stop Time Machine prompting to use new disks for backup
+  community.general.osx_defaults:
+    domain: com.apple.TimeMachine
+    key: DoNotOfferNewDisksForBackup
+    type: bool
+    value: true
+
+- name: Suppress crash reporter modal dialogs (still logs crashes)
+  community.general.osx_defaults:
+    domain: com.apple.CrashReporter
+    key: DialogType
+    type: string
+    value: none
+
+# ============================================================
+# Trackpad / Mouse
+# ============================================================
+- name: Enable tap to click
+  community.general.osx_defaults:
+    domain: com.apple.AppleMultitouchTrackpad
+    key: Clicking
+    type: int
+    value: 1
+
+- name: Set tracking speed
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: com.apple.trackpad.scaling
+    type: float
+    value: 2.5
+
+# ============================================================
+# Screenshots
+# ============================================================
+- name: Create screenshots directory
+  ansible.builtin.file:
+    path: "{{ home_dir }}/Screenshots"
+    state: directory
+    mode: "0755"
+
+- name: Save screenshots to ~/Screenshots
+  community.general.osx_defaults:
+    domain: com.apple.screencapture
+    key: location
+    type: string
+    value: "{{ home_dir }}/Screenshots"
+  notify: Restart SystemUIServer
+
+- name: Screenshots as PNG
+  community.general.osx_defaults:
+    domain: com.apple.screencapture
+    key: type
+    type: string
+    value: png
+  notify: Restart SystemUIServer
+
+- name: Disable screenshot shadow
+  community.general.osx_defaults:
+    domain: com.apple.screencapture
+    key: disable-shadow
+    type: bool
+    value: true
+  notify: Restart SystemUIServer
+
+# ============================================================
+# Notifications
+# ============================================================
+- name: Disable notification center on lock screen
+  community.general.osx_defaults:
+    domain: com.apple.ncprefs
+    key: content_visibility
+    type: int
+    value: 0
+
+- name: Set notification banner display time to 3s
+  community.general.osx_defaults:
+    domain: com.apple.notificationcenterui
+    key: bannerTime
+    type: int
+    value: 3

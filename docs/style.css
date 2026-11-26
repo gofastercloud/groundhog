@@ -862,3 +862,118 @@ code {
     animation: none;
   }
 }
+
+/* Built for Agents Showcase */
+.agent-showcase {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.agent-flow-card {
+  background: rgba(24, 24, 37, 0.9);
+  border: 1px solid rgba(203, 166, 247, 0.28);
+  border-radius: 18px;
+  padding: 1.5rem;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
+}
+
+.agent-prompt {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: rgba(49, 50, 68, 0.55);
+  border: 1px solid rgba(180, 190, 254, 0.2);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.agent-prompt p {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.96rem;
+}
+
+.agent-badge {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--crust);
+  background: var(--mauve);
+  padding: 0.22rem 0.55rem;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.agent-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.agent-steps li {
+  display: grid;
+  grid-template-columns: 132px 1fr;
+  gap: 0.75rem;
+  align-items: baseline;
+  color: var(--subtext1);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.step-tag {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  text-align: center;
+  border: 1px solid transparent;
+}
+
+.tag-mauve { color: var(--mauve); background: rgba(203, 166, 247, 0.12); border-color: rgba(203, 166, 247, 0.35); }
+.tag-teal { color: var(--teal); background: rgba(148, 226, 213, 0.12); border-color: rgba(148, 226, 213, 0.35); }
+.tag-peach { color: var(--peach); background: rgba(250, 179, 135, 0.12); border-color: rgba(250, 179, 135, 0.35); }
+.tag-green { color: var(--green); background: rgba(166, 227, 161, 0.12); border-color: rgba(166, 227, 161, 0.35); }
+
+.agent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.agent-pillars {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.skill-install-bar {
+  margin-top: 0.25rem;
+}
+
+.t-mauve {
+  color: var(--mauve);
+}
+
+@media (max-width: 860px) {
+  .agent-showcase {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-steps li {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
+
+  .step-tag {
+    width: fit-content;
+  }
+}

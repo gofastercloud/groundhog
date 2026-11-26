@@ -12,13 +12,13 @@ fail() {
 assert_contains() {
     local file=$1
     local pattern=$2
-    rg -q --fixed-strings "$pattern" "$file" || fail "$file is missing: $pattern"
+    grep -Fq -- "$pattern" "$file" || fail "$file is missing: $pattern"
 }
 
 assert_not_contains() {
     local file=$1
     local pattern=$2
-    if rg -q --fixed-strings "$pattern" "$file"; then
+    if grep -Fq -- "$pattern" "$file"; then
         fail "$file still contains: $pattern"
     fi
 }
@@ -27,14 +27,14 @@ assert_manifest_entry() {
     local file=$1
     local kind=$2
     local name=$3
-    rg -q "^${kind} \"${name}\"([[:space:]]|$)" "$file" || fail "$file is missing $kind entry: $name"
+    grep -Eq "^${kind} \"${name}\"([[:space:]]|$)" "$file" || fail "$file is missing $kind entry: $name"
 }
 
 assert_no_manifest_entry() {
     local file=$1
     local kind=$2
     local name=$3
-    if rg -q "^${kind} \"${name}\"([[:space:]]|$)" "$file"; then
+    if grep -Eq "^${kind} \"${name}\"([[:space:]]|$)" "$file"; then
         fail "$file still contains $kind entry: $name"
     fi
 }
@@ -53,10 +53,12 @@ BREWFILE="$ROOT/homebrew/.Brewfile"
 ZSHRC="$ROOT/zsh/.zshrc"
 GHOSTTY_CONFIG="$ROOT/ghostty/.config/ghostty/config"
 LAUNCHER_TEMPLATE="$ROOT/ansible/roles/dev_tools/templates/ghostty-tmux.j2"
-DOTFILES_SCRIPT="$ROOT/dotfiles.sh"
+GROUNDHOG_BIN="$ROOT/groundhog"
+DOTFILES_SHIM="$ROOT/dotfiles.sh"
 HOMEBREW_ROLE="$ROOT/ansible/roles/homebrew/tasks/main.yml"
 DEV_TOOLS_ROLE="$ROOT/ansible/roles/dev_tools/tasks/main.yml"
 MACOS_DEFAULTS_ROLE="$ROOT/ansible/roles/macos_defaults/tasks/main.yml"
+PRIVACY_ROLE="$ROOT/ansible/roles/macos_defaults/tasks/privacy.yml"
 REMOTE_LOGIN_ROLE="$ROOT/ansible/roles/macos_defaults/tasks/remote_login.yml"
 POWER_ROLE="$ROOT/ansible/roles/macos_defaults/tasks/power.yml"
 YUBIKEY_ROLE="$ROOT/ansible/roles/yubikey/tasks/main.yml"
@@ -66,7 +68,6 @@ TMUX_CONF="$ROOT/tmux/.tmux.conf"
 README="$ROOT/README.md"
 
 # Core Brewfile checks (public defaults stay clean of personal/hardware/MAS bloat).
-assert_manifest_entry "$BREWFILE" brew age
 assert_manifest_entry "$BREWFILE" brew shellcheck
 assert_manifest_entry "$BREWFILE" brew ansible-lint
 assert_manifest_entry "$BREWFILE" brew yamllint
@@ -89,7 +90,10 @@ assert_manifest_entry "$BREWFILE" vscode charliermarsh.ruff
 assert_manifest_entry "$BREWFILE" vscode catppuccin.catppuccin-vsc
 assert_manifest_entry "$BREWFILE" vscode asvetliakov.vscode-neovim
 assert_not_contains "$BREWFILE" 'brew "node"'
-assert_not_contains "$BREWFILE" '^mas '
+if grep -Eq '^mas ' "$BREWFILE"; then
+    fail "$BREWFILE must not contain mas entries"
+fi
+assert_no_manifest_entry "$BREWFILE" brew age
 assert_no_manifest_entry "$BREWFILE" brew nvm
 assert_no_manifest_entry "$BREWFILE" brew zsh-completions
 assert_no_manifest_entry "$BREWFILE" brew zsh-fast-syntax-highlighting
@@ -97,20 +101,21 @@ assert_no_manifest_entry "$BREWFILE" cask steam
 assert_no_manifest_entry "$BREWFILE" cask claude
 assert_no_manifest_entry "$BREWFILE" cask immurok/tap/immurok
 
-# Shell & terminal (lean fallback zsh + primary nushell)
+# Shell & terminal (lean fallback zsh + primary nushell; no bundled secrets wrapper)
 assert_contains "$ZSHRC" 'typeset -U path PATH'
 assert_contains "$ZSHRC" 'setopt HIST_IGNORE_SPACE'
 assert_contains "$ZSHRC" 'eval "$(mise activate zsh)"'
 assert_not_contains "$ZSHRC" 'nvm.sh'
 assert_not_contains "$ZSHRC" 'fzf-tab'
 assert_not_contains "$ZSHRC" 'zsh-fast-syntax-highlighting'
+assert_not_contains "$ZSHRC" 'with-secrets'
+assert_not_contains "$ZSHRC" 'source "$HOME/.secrets"'
 assert_contains "$ROOT/zsh/.zprofile" 'path=("$HOME/.local/share/mise/shims" $path)'
 assert_contains "$ROOT/zsh/.zprofile" 'path=("$HOME/.local/bin" $path)'
 assert_not_contains "$ZSHRC" 'path=("$HOME/.local/bin" $path)'
 assert_contains "$ZSHRC" "alias gs='git status -sb'"
 assert_contains "$ROOT/nushell/Library/Application Support/nushell/autoload/00-aliases.nu" 'alias dcu ='
-assert_contains "$ZSHRC" 'with-secrets()'
-assert_not_contains "$ZSHRC" 'source "$HOME/.secrets"'
+assert_not_contains "$ROOT/nushell/Library/Application Support/nushell/autoload/utils.nu" 'def --wrapped with-secrets'
 assert_contains "$ROOT/zsh/.zprofile" 'com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh'
 assert_contains "$ROOT/nushell/Library/Application Support/nushell/env.nu" 'com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh'
 
@@ -131,17 +136,27 @@ assert_contains "$ROOT/lazygit/.config/lazygit/config.yml" 'delta --dark --pagin
 assert_contains "$LAUNCHER_TEMPLATE" 'PATH="/opt/homebrew/bin:${PATH:-}"'
 assert_not_contains "$LAUNCHER_TEMPLATE" 'sesh connect main'
 
-# Stow & gitignore guards
-assert_contains "$DOTFILES_SCRIPT" '[[ "$pkg" == "vscode" ]] && stow_flags+=(--no-folding)'
-assert_contains "$DOTFILES_SCRIPT" '[[ "$pkg" == "nushell" ]] && stow_flags+=(--no-folding)'
-assert_contains "$DOTFILES_SCRIPT" 'init-custom)'
-assert_contains "$DOTFILES_SCRIPT" 'ansible)'
-assert_not_contains "$DOTFILES_SCRIPT" 'fzf-tab'
+# CLI, stow, gitignore & supply-chain guards
+[[ -x "$GROUNDHOG_BIN" ]] || fail "groundhog launcher must be executable"
+[[ -x "$DOTFILES_SHIM" ]] || fail "dotfiles.sh compatibility shim must be executable"
+[[ -x "$ROOT/git/.config/git/template/hooks/pre-commit" ]] || fail "global git template pre-commit hook must be executable"
 assert_contains "$ROOT/ansible.cfg" 'pipelining = True'
-assert_contains "$DOTFILES_SCRIPT" 'STOW_PACKAGES=(zsh git tmux nvim ghostty gh atuin bat btop lazygit vscode nushell)'
+assert_contains "$ROOT/ansible/bootstrap.sh" '--custom-repo'
+assert_not_contains "$ROOT/ansible/bootstrap.sh" '/Homebrew/install/HEAD/'
+assert_not_contains "$ROOT/ansible/bootstrap.sh" 'collection install -r "${SCRIPT_DIR}/requirements.yml" -p "$HOME/.ansible/collections" --upgrade'
+assert_not_contains "$ROOT/ansible/bootstrap.sh" '--upgrade'
 git -C "$ROOT" check-ignore -q "custom/config.yml" || fail "custom/ overlay must be gitignored"
 git -C "$ROOT" check-ignore -q "vscode/Library/Application Support/Code/User/globalStorage/state.vscdb" || fail "VS Code storage must be gitignored"
 git -C "$ROOT" check-ignore -q "vscode/Library/Application Support/Code/User/settings.json" && fail "VS Code settings.json must stay tracked"
+
+# Supply-chain cooldowns (uv, mise, npm) & global Git hardening
+assert_contains "$ROOT/ansible/roles/dev_tools/templates/uv.toml.j2" 'exclude-newer = "7 days"'
+assert_contains "$ROOT/ansible/roles/dev_tools/templates/mise.toml.j2" 'minimum_release_age = "7d"'
+assert_contains "$ROOT/ansible/roles/dev_tools/templates/npmrc.j2" 'ignore-scripts=true'
+assert_contains "$ROOT/ansible/roles/dev_tools/templates/npmrc.j2" 'min-release-age=7'
+assert_contains "$ROOT/git/.gitconfig" 'fsckObjects = true'
+assert_contains "$ROOT/git/.gitconfig" 'allow = user'
+assert_contains "$ROOT/git/.gitconfig" 'templateDir = ~/.config/git/template'
 
 # Ansible defaults, feature flags & hardening
 assert_not_contains "$HOMEBREW_ROLE" 'failed_when: false'
@@ -165,35 +180,51 @@ assert_contains "$DEFAULT_VARS" 'yubikey_enabled: false'
 assert_contains "$DEFAULT_VARS" 'immurok_enabled: false'
 assert_contains "$DEFAULT_VARS" 'claude_code_enabled: false'
 assert_contains "$DEFAULT_VARS" 'antigravity_enabled: false'
-assert_contains "$ROOT/ansible/roles/dev_tools/templates/npmrc.j2" 'ignore-scripts=true'
-assert_contains "$ROOT/git/.gitconfig" 'fsckObjects = true'
-assert_contains "$ROOT/git/.gitconfig" 'allow = user'
-assert_contains "$ROOT/ansible/roles/claude_code/templates/baseline-settings.json.j2" '"allowUnsandboxedCommands": false'
+CLAUDE_TEMPLATE="$ROOT/ansible/roles/claude_code/templates/baseline-settings.json.j2"
+assert_contains "$CLAUDE_TEMPLATE" '"allowUnsandboxedCommands": false'
+assert_contains "$CLAUDE_TEMPLATE" '"Bash(git push --force-with-lease:*)"'
+assert_contains "$CLAUDE_TEMPLATE" '"Edit(~/.ssh/**)"'
+assert_contains "$CLAUDE_TEMPLATE" '"Write(~/.aws/**)"'
 assert_contains "$ROOT/ansible/roles/antigravity/templates/agy-settings.json.j2" 'antigravity_trusted_workspaces'
 assert_contains "$ROOT/nushell/Library/Application Support/nushell/autoload/git.nu" '.worktreeinclude'
 assert_contains "$ROOT/nushell/Library/Application Support/nushell/autoload/orb.nu" 'def agent-box'
 [[ -f "$ROOT/AGENTIC.md" ]] || fail "missing AGENTIC.md"
+[[ -f "$ROOT/CHANGELOG.md" ]] || fail "missing CHANGELOG.md"
+[[ -f "$ROOT/skills/groundhog/SKILL.md" ]] || fail "missing skills/groundhog/SKILL.md"
+assert_contains "$ROOT/skills/groundhog/SKILL.md" 'name: groundhog'
 [[ -f "$ROOT/docs/index.html" ]] || fail "missing docs/index.html"
+assert_contains "$ROOT/docs/index.html" 'sha384-GY5FqjttLCFRt/McQbyaVdCk2O1IQtOeX8Py6NfD89BIAsIyJFRl4UgSXrk2vXAk'
 assert_contains "$DEFAULT_VARS" 'docker.expose_ports_to_lan: "false"'
 assert_contains "$DEFAULT_VARS" 'betterdisplay_shortcuts:'
-assert_contains "$MACOS_DEFAULTS_ROLE" 'Keep Gatekeeper quarantine provenance checks enabled'
-assert_contains "$MACOS_DEFAULTS_ROLE" 'key: AirplayRecieverEnabled'
+
+# Modular macos_defaults topic files
+for f in animations.yml dock_prefs.yml performance.yml finder.yml keyboard.yml privacy.yml remote_login.yml file_handlers.yml shottr.yml betterdisplay.yml orbstack.yml power.yml; do
+    [[ -f "$ROOT/ansible/roles/macos_defaults/tasks/$f" ]] || fail "missing macos_defaults task file: $f"
+    assert_contains "$MACOS_DEFAULTS_ROLE" "include_tasks: $f"
+done
+assert_contains "$PRIVACY_ROLE" 'Keep Gatekeeper quarantine provenance checks enabled'
+assert_contains "$PRIVACY_ROLE" 'key: AirplayRecieverEnabled'
 assert_contains "$ROOT/ansible/roles/macos_defaults/tasks/finder.yml" 'key: FXDefaultSearchScope'
 assert_contains "$ROOT/ansible/roles/macos_defaults/tasks/file_handlers.yml" 'duti -s com.microsoft.VSCode'
 assert_contains "$ROOT/ansible/roles/macos_defaults/tasks/shottr.yml" 'KeyboardShortcuts_area'
 assert_contains "$ROOT/ansible/roles/macos_defaults/tasks/betterdisplay.yml" 'SUSendProfileInfo'
 assert_contains "$ROOT/ansible/roles/macos_defaults/tasks/orbstack.yml" 'orb config set'
-assert_contains "$POWER_ROLE" 'when: machine_profile == '\''desktop'\'''
+assert_contains "$POWER_ROLE" "when: machine_profile == 'desktop'"
 assert_contains "$POWER_ROLE" 'cmd: pmset -a networkoversleep 0'
 
-# PAM order & sudo validation
+# PAM order, deduplicated PAM check & sudo validation
 SUDO_LOCAL_TEMPLATE="$ROOT/ansible/roles/sudo/templates/sudo_local.j2"
+[[ -f "$ROOT/ansible/roles/sudo/tasks/check_pam_modules.yml" ]] || fail "missing check_pam_modules.yml"
+assert_contains "$SUDO_ROLE" 'include_tasks: check_pam_modules.yml'
 assert_contains "$SUDO_ROLE" 'src: sudo_local.j2'
 assert_contains "$SUDO_ROLE" 'dest: /etc/pam.d/sudo_local'
 assert_contains "$SUDO_ROLE" 'validate: /usr/sbin/visudo -cf %s'
 assert_contains "$YUBIKEY_ROLE" 'when: yubikey_enabled | default(false) | bool'
 assert_contains "$TMUX_CONF" 'set -g status-interval 30'
 assert_contains "$TMUX_CONF" 'sesh connect'
+assert_contains "$TMUX_CONF" 'groundhog tmux-copy-last #{pane_id}'
+assert_contains "$TMUX_CONF" 'tmux-battery#43832651ede43f54dcf0588727c1957fe648d57d'
+assert_contains "$TMUX_CONF" 'tmux-yank#acfd36e4fcba99f8310a7dfb432111c242fe7392'
 pam_order=$(grep -oE 'pam_(reattach|immurok|u2f|tid)\.so' "$SUDO_LOCAL_TEMPLATE" | grep -v '^$' | awk '!seen[$0]++' | tr '\n' ' ')
 if [ "$pam_order" != "pam_reattach.so pam_immurok.so pam_u2f.so pam_tid.so " ]; then
     fail "sudo_local.j2 PAM order wrong: $pam_order"
@@ -223,17 +254,16 @@ done
 [[ -f "$ROOT/AGENTS.md" ]] || fail "missing AGENTS.md"
 [[ -f "$ROOT/CLAUDE.md" ]] || fail "missing CLAUDE.md"
 
-# Test init-custom in an isolated copy
-init_tmp=$(mktemp -d "${TMPDIR:-/tmp}/groundhog-init.XXXXXX")
-cp "$DOTFILES_SCRIPT" "$init_tmp/dotfiles.sh"
-cp -R "$ROOT/custom.example" "$init_tmp/custom.example"
-bash "$init_tmp/dotfiles.sh" init-custom >/dev/null || { rm -rf "$init_tmp"; fail "init-custom failed"; }
-[[ -d "$init_tmp/custom/.git" && -f "$init_tmp/custom/config.yml" ]] || { rm -rf "$init_tmp"; fail "init-custom did not initialise custom/ git repo"; }
-rm -rf "$init_tmp"
+# Docs-drift guard: every opt-in feature flag in default.config.yml must be documented in README.md.
+while IFS= read -r flag; do
+    assert_contains "$README" "$flag"
+done < <(grep -Eo '^[a-z0-9_]+_enabled:' "$DEFAULT_VARS" | tr -d ':')
 
 # Shell syntax checks
-bash -n "$DOTFILES_SCRIPT"
+bash -n "$GROUNDHOG_BIN"
+bash -n "$DOTFILES_SHIM"
 bash -n "$ROOT/ansible/bootstrap.sh"
+bash -n "$ROOT/git/.config/git/template/hooks/pre-commit"
 zsh -n "$ZSHRC"
 zsh -n "$ROOT/zsh/.zprofile"
 
@@ -253,24 +283,19 @@ if command -v nu >/dev/null; then
 fi
 
 # Every top-level directory is either a stow package or explicitly listed non-package directory.
-NON_PACKAGE_DIRS=(ansible custom custom.example docs homebrew ssh tests)
+NON_PACKAGE_DIRS=(ansible custom custom.example docs homebrew skills src ssh tests)
 [[ -f "$ROOT/docs/images/groundhog-logo.jpg" ]] || fail "missing docs/images/groundhog-logo.jpg"
-# shellcheck disable=SC2034
-DOTFILES_DIR="$ROOT"
-eval "$(sed -n '/^get_targets() {/,/^}/p' "$DOTFILES_SCRIPT")"
-stow_packages=$(sed -n 's/^STOW_PACKAGES=(\(.*\))$/\1/p' "$DOTFILES_SCRIPT")
-[[ -n "$stow_packages" ]] || fail "could not read STOW_PACKAGES from dotfiles.sh"
+stow_packages=$(PYTHONPATH="$ROOT/src" python3 -c 'from groundhog.config import STOW_PACKAGES; print(" ".join(STOW_PACKAGES))')
+[[ -n "$stow_packages" ]] || fail "could not read STOW_PACKAGES from groundhog.config"
 for dir in "$ROOT"/*/; do
     name=$(basename "$dir")
     if [[ " ${NON_PACKAGE_DIRS[*]} " == *" $name "* ]]; then
         continue
     fi
     [[ " $stow_packages " == *" $name "* ]] || fail "top-level directory $name is neither a stow package nor listed in NON_PACKAGE_DIRS"
-    [[ -n "$(get_targets "$name")" ]] || fail "dotfiles.sh get_targets has no case for stow package $name"
 done
 for name in $stow_packages; do
     [[ -d "$ROOT/$name" ]] || fail "STOW_PACKAGES lists $name but there is no such directory"
-    [[ -n "$(get_targets "$name")" ]] || fail "dotfiles.sh get_targets has no case for stow package $name"
 done
 
 # Tool-level validation of configs
@@ -283,7 +308,7 @@ if command -v tmux >/dev/null; then
     for conf in "$ROOT/tmux/.tmux.conf" "$ROOT/tmux/.tmux.mobile.conf"; do
         rc=0
         out=$(tmux -S "$tmux_dir/sock" -f "$conf" start-server \; show-messages \; kill-server 2>&1) || rc=$?
-        if [[ "$out" == *"error creating"* ]]; then
+        if [[ "$out" == *"error creating"* || "$out" == *"Operation not permitted"* ]]; then
             echo "SKIP: tmux cannot create a socket here (sandbox?); $conf not validated" >&2
         elif (( rc != 0 )) || [[ "$out" =~ (unknown\ command|unknown\ option|invalid\ option|ambiguous) ]]; then
             rm -rf "$tmux_dir"

@@ -11,7 +11,6 @@ $env.MANPAGER = "nvim +Man!"
 $env.LESS = "-RFX"
 $env.PAGER = "less"
 $env.NEXT_TELEMETRY_DISABLED = "1"
-$env.PRIVATE_SECRETS_FILE = ($env.PRIVATE_SECRETS_FILE? | default ($env.HOME | path join ".config/private/secrets.env"))
 
 # Secretive (Secure Enclave SSH agent): also set here so `exec nu` and direct
 # nu launches pick up the socket without needing a fresh zsh login shell.

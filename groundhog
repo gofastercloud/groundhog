@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# groundhog — Executable launcher for the Groundhog Python CLI & curses TUI.
+set -euo pipefail
+
+# Resolve through symlinks (e.g. ~/.local/bin/groundhog -> repo/groundhog)
+SOURCE="${BASH_SOURCE[0]}"
+while [[ -L "$SOURCE" ]]; do
+    DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+    TARGET="$(readlink "$SOURCE")"
+    [[ "$TARGET" != /* ]] && TARGET="$DIR/$TARGET"
+    SOURCE="$TARGET"
+done
+REPO_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+
+PYTHON_BIN=""
+for candidate in /opt/homebrew/bin/python3 /usr/local/bin/python3 "$(command -v python3 2>/dev/null || true)" /usr/bin/python3; do
+    if [[ -n "$candidate" && -x "$candidate" ]]; then
+        PYTHON_BIN="$candidate"
+        break
+    fi
+done
+
+if [[ -z "$PYTHON_BIN" ]]; then
+    echo "Error: python3 is required to run groundhog." >&2
+    exit 1
+fi
+
+export GROUNDHOG_DIR="$REPO_DIR"
+export PYTHONPATH="${REPO_DIR}/src${PYTHONPATH:+:$PYTHONPATH}"
+exec "$PYTHON_BIN" -m groundhog "$@"

@@ -1,0 +1,30 @@
+[project]
+name = "groundhog-cli"
+version = "0.2.0"
+description = "Interactive TUI and non-interactive CLI for managing Groundhog macOS workstation automation"
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "W"]
+
+[tool.ty.environment]
+python-version = "3.11"
+root = ["src", "tests"]

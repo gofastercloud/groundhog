@@ -1,0 +1,72 @@
+---
+# performance.yml — Window resume, App Nap, Handoff, save/print panels, Focus note.
+
+- name: Disable window resume (reopen windows on login)
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: NSQuitAlwaysKeepsWindows
+    type: bool
+    value: false
+
+- name: Allow App Nap
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: NSAppSleepDisabled
+    type: bool
+    value: false
+
+- name: Allow automatic termination of inactive apps
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: NSDisableAutomaticTermination
+    type: bool
+    value: false
+
+- name: Enable Handoff (shared clipboard, continuity)
+  community.general.osx_defaults:
+    domain: com.apple.coreservices.useractivityd
+    key: ActivityAdvertisingAllowed
+    type: bool
+    value: true
+
+- name: Enable Handoff receive
+  community.general.osx_defaults:
+    domain: com.apple.coreservices.useractivityd
+    key: ActivityReceivingAllowed
+    type: bool
+    value: true
+
+- name: Expand save panel by default
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: NSNavPanelExpandedStateForSaveMode
+    type: bool
+    value: true
+
+- name: Expand save panel by default (2)
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: NSNavPanelExpandedStateForSaveMode2
+    type: bool
+    value: true
+
+- name: Expand print panel by default
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: PMPrintingExpandedStateForPrint
+    type: bool
+    value: true
+
+- name: Save to disk (not iCloud) by default
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: NSDocumentSaveNewDocumentsToCloud
+    type: bool
+    value: false
+
+- name: Note about Focus modes
+  ansible.builtin.debug:
+    msg: >
+      Configure Focus modes manually in System Settings > Focus.
+      Recommended: Create a 'Work' focus that silences all except
+      Slack, Teams, and calendar alerts. Schedule 9-5 weekdays.

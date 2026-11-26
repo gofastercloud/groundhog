@@ -1,0 +1,171 @@
+---
+# animations.yml — Animations, Siri/Spotlight hotkeys, menu bar, and UI sounds.
+
+- name: Disable window animations
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: NSAutomaticWindowAnimationsEnabled
+    type: bool
+    value: false
+
+- name: Disable smooth scrolling
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: NSScrollAnimationEnabled
+    type: bool
+    value: false
+
+- name: Speed up Mission Control animation
+  community.general.osx_defaults:
+    domain: com.apple.dock
+    key: expose-animation-duration
+    type: float
+    value: 0.1
+  notify: Restart Dock
+
+- name: Disable Finder animations
+  community.general.osx_defaults:
+    domain: com.apple.finder
+    key: DisableAllAnimations
+    type: bool
+    value: true
+  notify: Restart Finder
+
+# com.apple.universalaccess is the user's own domain, so write it as the user
+# (no become). On recent macOS these two writes need the terminal running
+# Ansible to hold Full Disk Access (System Settings > Privacy & Security);
+# without it the write is dropped or fails.
+- name: Reduce transparency
+  community.general.osx_defaults:
+    domain: com.apple.universalaccess
+    key: reduceTransparency
+    type: bool
+    value: true
+
+- name: Reduce motion
+  community.general.osx_defaults:
+    domain: com.apple.universalaccess
+    key: reduceMotion
+    type: bool
+    value: true
+
+- name: Disable springboard animations (Launchpad)
+  community.general.osx_defaults:
+    domain: com.apple.dock
+    key: springboard-show-duration
+    type: float
+    value: 0
+  notify: Restart Dock
+
+- name: Disable springboard hide animation
+  community.general.osx_defaults:
+    domain: com.apple.dock
+    key: springboard-hide-duration
+    type: float
+    value: 0
+  notify: Restart Dock
+
+# ============================================================
+# Siri & Spotlight hotkeys
+# ============================================================
+- name: Disable Siri
+  community.general.osx_defaults:
+    domain: com.apple.assistant.support
+    key: "Assistant Enabled"
+    type: bool
+    value: false
+
+- name: Remove Siri from menu bar
+  community.general.osx_defaults:
+    domain: com.apple.Siri
+    key: StatusMenuVisible
+    type: bool
+    value: false
+
+# Symbolic hotkeys are nested dicts that osx_defaults cannot edit, so read the
+# current state first and only write (and refresh the settings daemon) when a
+# shortcut is not already disabled.
+#   64  = Spotlight (Cmd+Space; Raycast replaces it)
+#   28/29/30/31/184 = macOS screenshot shortcuts (Shottr replaces them; it
+#   configures its own hotkeys)
+- name: Read symbolic hotkey state
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      # PlistBuddy can't read /dev/stdin reliably; plutil accepts "-" for stdin.
+      defaults export com.apple.symbolichotkeys - \
+        | plutil -extract "AppleSymbolicHotKeys.{{ item }}.enabled" raw -o - - 2>/dev/null \
+        || echo missing
+    executable: /bin/bash
+  loop: ["64", "28", "29", "30", "31", "184"]
+  register: macos_defaults_hotkeys
+  changed_when: false
+  check_mode: false
+
+- name: Disable Spotlight and screenshot keyboard shortcuts
+  ansible.builtin.command:
+    cmd: >-
+      defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys
+      -dict-add "{{ item.item }}" '<dict><key>enabled</key><false/></dict>'
+  loop: "{{ macos_defaults_hotkeys.results }}"
+  loop_control:
+    label: "hotkey {{ item.item }}"
+  when: item.stdout | trim != 'false'
+  changed_when: true
+  notify: Apply symbolic hotkeys
+
+- name: Hide Spotlight icon from menu bar
+  community.general.osx_defaults:
+    domain: com.apple.Spotlight
+    host: currentHost
+    key: MenuItemHidden
+    type: bool
+    value: true
+  notify: Restart SystemUIServer
+
+# ============================================================
+# Menu bar & interface sounds
+# ============================================================
+- name: Always show volume control in menu bar
+  community.general.osx_defaults:
+    domain: com.apple.controlcenter
+    key: Sound
+    type: int
+    value: 18
+  notify: Restart SystemUIServer
+
+- name: Show date in menu bar clock
+  community.general.osx_defaults:
+    domain: com.apple.menuextra.clock
+    key: ShowDate
+    type: int
+    value: 1
+  notify: Restart SystemUIServer
+
+- name: Show seconds in menu bar clock
+  community.general.osx_defaults:
+    domain: com.apple.menuextra.clock
+    key: ShowSeconds
+    type: bool
+    value: true
+  notify: Restart SystemUIServer
+
+- name: Disable UI sound effects
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: com.apple.sound.uiaudio.enabled
+    type: int
+    value: 0
+
+- name: Disable system alert sound
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: com.apple.sound.beep.volume
+    type: float
+    value: 0
+
+- name: Disable startup sound
+  ansible.builtin.command:
+    cmd: nvram StartupMute=%01
+  become: true
+  changed_when: false

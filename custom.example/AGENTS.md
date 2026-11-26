@@ -13,6 +13,6 @@ This repository is a **private overlay** cloned into `groundhog/custom/` (git-ig
 
 ## Guardrails
 
-- **Never commit private keys, tokens, or secrets** — Gitleaks pre-commit scanning is active even in this private repo. Put API keys/tokens in `~/.config/private/secrets.env` (`chmod 600`), loaded via `with-secrets`.
+- **Never commit private keys, tokens, or secrets** — Gitleaks pre-commit scanning is active even in this private repo. Manage runtime API keys with your own secrets manager (such as 1Password CLI, macOS Keychain, or `sops`/`age`) outside Git.
 - **Keep generic improvements upstream**: If a change benefits any macOS user and contains no personal data, put it in the parent `groundhog` repo instead of here.
-- **After edits**: Run `../dotfiles.sh link` (or `../dotfiles.sh ansible --tags "<tags>"`) from `..` to reconcile live configs, and `pre-commit run --all-files` before committing.
+- **After edits**: Run `../groundhog link` (or `../groundhog ansible --tags "<tags>"`) from `..` to reconcile live configs, and `../groundhog verify-custom` plus `pre-commit run --all-files` before committing.

@@ -22,7 +22,7 @@ for f in "$data_dir"/vendor/autoload/*.nu "$NU_DIR"/autoload/*.nu; do
     [[ -e "$f" ]] && printf 'source "%s"\n' "$f"
 done > "$check"
 cat >> "$check" <<'NU'
-let want = [gst glog gsw gclean gwt orbs dps with-secrets ports nu-refresh-inits]
+let want = [gst glog gsw gclean gwt orbs dps agent-box cplast ports nu-refresh-inits]
 let missing = ($want | where {|c| scope commands | where name == $c | is-empty })
 if ($missing | is-not-empty) { print $"missing commands: ($missing)"; exit 1 }
 if (scope aliases | where name == ll | is-empty) { print "missing alias: ll"; exit 1 }

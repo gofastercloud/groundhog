@@ -13,3 +13,16 @@
     dest: "{{ home_dir }}/.gemini/antigravity-cli/settings.json"
     mode: "0644"
     follow: false
+
+- name: Ensure Antigravity user skills directory exists
+  ansible.builtin.file:
+    path: "{{ home_dir }}/.gemini/antigravity/skills"
+    state: directory
+    mode: "0755"
+
+- name: Link Groundhog agent skill into Antigravity
+  ansible.builtin.file:
+    src: "{{ dotfiles_dir }}/skills/groundhog"
+    dest: "{{ home_dir }}/.gemini/antigravity/skills/groundhog"
+    state: link
+    force: true

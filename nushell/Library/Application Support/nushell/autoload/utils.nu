@@ -1,33 +1,5 @@
 # General helpers.
 
-# Run a command with ~/.config/private/secrets.env loaded only into its
-# environment (port of the zsh with-secrets function). Values never touch
-# the parent shell.
-def --wrapped with-secrets [...cmd: string] {
-  if ($cmd | is-empty) { error make { msg: "usage: with-secrets <command> [args...]" } }
-  let file = $env.PRIVATE_SECRETS_FILE
-  if not ($file | path exists) { error make { msg: $"secrets file is not readable: ($file)" } }
-  # Plain KEY=value lines only: the file is parsed, never executed, so
-  # $VAR / $(...) are not expanded (unlike zsh's `source`).
-  let entries = (
-    open --raw $file | lines
-    | where {|l| ($l | str trim) !~ '^(#|$)' }
-    | each { str replace --regex '^\s*export\s+' '' }
-  )
-  let parsed = ($entries | parse --regex '^(?<k>[A-Za-z_][A-Za-z0-9_]*)=(?<v>.*)$')
-  let skipped = (($entries | length) - ($parsed | length))
-  if $skipped > 0 { print -e $"with-secrets: skipped ($skipped) line\(s\) not in KEY=value form" }
-  let vars = (
-    $parsed
-    | update v {|r| $r.v | str trim | str replace --regex '^"(.*)"$' '$1' | str replace --regex "^'(.*)'$" '$1' }
-    | reduce --fold {} {|r, acc| $acc | insert $r.k $r.v }
-  )
-  with-env $vars { run-external ($cmd | first) ...($cmd | skip 1) }
-}
-
-# Interactive nu with secrets loaded (port of zsh secrets-shell).
-def secrets-shell [] { with-secrets nu }
-
 # Listening TCP ports with owning process.
 def ports [] {
   ^lsof -nP -iTCP -sTCP:LISTEN

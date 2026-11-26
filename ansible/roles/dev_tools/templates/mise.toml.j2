@@ -4,3 +4,5 @@ node = "{{ node_version }}"
 
 [settings]
 idiomatic_version_file_enable_tools = ["node"]
+# Supply-chain cooldown: wait 7 days before picking newly published tool releases.
+minimum_release_age = "7d"

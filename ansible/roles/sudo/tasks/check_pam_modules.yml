@@ -1,0 +1,23 @@
+---
+# check_pam_modules.yml — Shared pre/post PAM safety guard for roles/sudo.
+# macOS PAM fails closed: one missing module path, even on a "sufficient"
+# line, stops sudo and the admin password dialog from working at all.
+# Runs without become (the files are world-readable), so it still explains
+# the problem when sudo is already broken.
+
+- name: Check PAM only references modules that exist
+  ansible.builtin.shell: |
+    set -eu
+    missing=0
+    for f in /etc/pam.d/sudo /etc/pam.d/sudo_local /etc/pam.d/authorization; do
+      [ -f "$f" ] || continue
+      for mod in $(awk '!/^[[:space:]]*#/ { for (i = 1; i <= NF; i++) if ($i ~ /^\/.*\.so$/) print $i }' "$f"); do
+        if [ ! -f "$mod" ]; then
+          echo "$f loads $mod, which does not exist"
+          missing=1
+        fi
+      done
+    done
+    exit "$missing"
+  changed_when: false
+  check_mode: false

@@ -1,0 +1,120 @@
+---
+# privacy.yml — Telemetry, AirDrop/AirPlay hardening, Firewall, Spotlight exclusions, cruft removal.
+
+# ============================================================
+# Telemetry & analytics
+# ============================================================
+- name: Disable Apple analytics sharing
+  community.general.osx_defaults:
+    domain: "/Library/Application Support/CrashReporter/DiagnosticMessagesHistory"
+    key: AutoSubmit
+    type: bool
+    value: false
+  become: true
+
+- name: Disable personalized ads
+  community.general.osx_defaults:
+    domain: com.apple.AdLib
+    key: allowApplePersonalizedAdvertising
+    type: bool
+    value: false
+
+- name: Disable Siri analytics
+  community.general.osx_defaults:
+    domain: com.apple.assistant.support
+    key: "Siri Data Sharing Opt-In Status"
+    type: int
+    value: 2
+
+# ============================================================
+# Launch Services, AirDrop & AirPlay privacy
+# ============================================================
+# Keep Gatekeeper quarantine provenance checks enabled: LSQuarantine already
+# defaults to true, so it is deliberately not set here.
+
+- name: Disable Spotlight suggestions (web results)
+  community.general.osx_defaults:
+    domain: com.apple.lookup.shared
+    key: LookupSuggestionsDisabled
+    type: bool
+    value: true
+
+- name: Disable Game Center
+  community.general.osx_defaults:
+    domain: com.apple.gamed
+    key: Disabled
+    type: bool
+    value: true
+
+# AirDrop visibility is controlled by sharingd on modern macOS.
+- name: Disable AirDrop discoverability
+  community.general.osx_defaults:
+    domain: com.apple.sharingd
+    key: DiscoverableMode
+    type: string
+    value: "Off"
+
+# Apple spells the key "Reciever" (sic) in Control Center's ByHost plist.
+# Frees ports 5000 and 7000 and closes inbound AirPlay listeners.
+- name: Disable AirPlay Receiver
+  community.general.osx_defaults:
+    domain: com.apple.controlcenter
+    host: currentHost
+    key: AirplayRecieverEnabled
+    type: bool
+    value: false
+  notify: Restart ControlCenter
+
+# ============================================================
+# Application Firewall & Stealth Mode
+# ============================================================
+- name: Read application firewall state
+  ansible.builtin.command:
+    cmd: "/usr/libexec/ApplicationFirewall/socketfilterfw {{ item }}"
+  loop: ["--getglobalstate", "--getstealthmode"]
+  register: macos_defaults_firewall
+  changed_when: false
+  check_mode: false
+
+- name: Enable firewall
+  ansible.builtin.command:
+    cmd: /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on
+  become: true
+  when: "'enabled' not in macos_defaults_firewall.results[0].stdout"
+  changed_when: true
+
+- name: Enable stealth mode
+  ansible.builtin.command:
+    cmd: /usr/libexec/ApplicationFirewall/socketfilterfw --setstealthmode on
+  become: true
+  when: "'is on' not in macos_defaults_firewall.results[1].stdout"
+  changed_when: true
+
+# ============================================================
+# Remove SIP-safe Apple cruft apps & exclude dev dirs from Spotlight
+# ============================================================
+- name: Remove Apple apps that are safe to delete
+  ansible.builtin.file:
+    path: "/Applications/{{ item }}"
+    state: absent
+  loop: "{{ apple_apps_to_remove }}"
+  become: true
+
+- name: Ensure Spotlight exclusion directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ spotlight_exclusions }}"
+
+# Best effort: modern Spotlight (mds) does not reliably honour
+# .metadata_never_index on every volume or directory. For a guaranteed
+# exclusion add the paths under System Settings > Spotlight > Search Privacy.
+- name: Exclude directories from Spotlight indexing
+  ansible.builtin.file:
+    path: "{{ item }}/.metadata_never_index"
+    state: touch
+    modification_time: preserve
+    access_time: preserve
+    mode: "0644"
+  loop: "{{ spotlight_exclusions }}"

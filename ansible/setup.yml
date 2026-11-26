@@ -114,10 +114,10 @@
       when: setup_custom_tasks.stat.exists
       tags: ['custom', 'dev-tools']
 
-    # Run dotfiles.sh link to stow configs, manual symlinks, and custom overlay links
+    # Run groundhog link to stow configs, manual symlinks, and custom overlay links
     - name: Stow dotfiles and create manual symlinks
       ansible.builtin.command:
-        cmd: bash {{ dotfiles_dir }}/dotfiles.sh link
+        cmd: "{{ dotfiles_dir }}/groundhog link"
       register: stow_result
       changed_when: "'Stowing' in stow_result.stdout or '→' in stow_result.stdout"
       tags: ['dotfiles']
@@ -149,10 +149,10 @@
             echo "Opening OrbStack for first-time setup..."
             open -a OrbStack
             echo "Wait for OrbStack to finish setup, then re-run:"
-            echo "  {{ dotfiles_dir }}/dotfiles.sh ansible --tags defaults"
+            echo "  {{ dotfiles_dir }}/groundhog ansible --tags defaults"
           else
             echo "OrbStack CLI available. Applying OrbStack defaults..."
-            "{{ dotfiles_dir }}/dotfiles.sh" ansible --tags defaults
+            "{{ dotfiles_dir }}/groundhog" ansible --tags defaults
           fi
           echo
 
@@ -182,7 +182,7 @@
               echo
             fi
             echo "After YubiKey registration, activate sudo via YubiKey:"
-            echo "  {{ dotfiles_dir }}/dotfiles.sh ansible --tags yubikey"
+            echo "  {{ dotfiles_dir }}/groundhog ansible --tags yubikey"
             echo
           fi
 

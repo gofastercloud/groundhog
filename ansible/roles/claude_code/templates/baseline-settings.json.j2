@@ -5,8 +5,16 @@
   },
   "permissions": {
     "deny": {{ ([
+      "Bash(git push +*)",
+      "Bash(git push --delete:*)",
+      "Bash(git push --force-with-lease:*)",
       "Bash(git push --force:*)",
       "Bash(git push -f:*)",
+      "Edit(~/.aws/**)",
+      "Edit(~/.config/gh/**)",
+      "Edit(~/.config/private/**)",
+      "Edit(~/.gnupg/**)",
+      "Edit(~/.ssh/**)",
       "Read(./**/*.key)",
       "Read(./**/*.pem)",
       "Read(./.env)",
@@ -20,7 +28,12 @@
       "Read(~/.secrets/**)",
       "Read(~/.ssh/**)",
       "Read(~/.supabase/**)",
-      "Read(~/.terraform.d/**)"
+      "Read(~/.terraform.d/**)",
+      "Write(~/.aws/**)",
+      "Write(~/.config/gh/**)",
+      "Write(~/.config/private/**)",
+      "Write(~/.gnupg/**)",
+      "Write(~/.ssh/**)"
     ] + (claude_code_extra_deny | default([]))) | to_nice_json }}
   },
   "hooks": {

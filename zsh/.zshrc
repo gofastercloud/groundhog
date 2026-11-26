@@ -85,31 +85,6 @@ elif command -v oh-my-posh &>/dev/null; then
   eval "$(oh-my-posh init zsh --config "${XDG_CONFIG_HOME:-$HOME/.config}/oh-my-posh/catppuccin_mocha.omp.json")"
 fi
 
-# Scoped secrets: load ~/.config/private/secrets.env only for one command/subshell
-PRIVATE_SECRETS_FILE="${PRIVATE_SECRETS_FILE:-$HOME/.config/private/secrets.env}"
-
-with-secrets() {
-  if (( $# == 0 )); then
-    echo "usage: with-secrets <command> [args...]" >&2
-    return 2
-  fi
-  if [[ ! -r "$PRIVATE_SECRETS_FILE" ]]; then
-    echo "secrets file is not readable: $PRIVATE_SECRETS_FILE" >&2
-    return 1
-  fi
-
-  (
-    set -a
-    source "$PRIVATE_SECRETS_FILE"
-    set +a
-    command "$@"
-  )
-}
-
-secrets-shell() {
-  with-secrets "${SHELL:-/bin/zsh}" -l
-}
-
 # Machine-specific overrides
 if [[ -f "$HOME/.zshrc.local" ]]; then
   source "$HOME/.zshrc.local"

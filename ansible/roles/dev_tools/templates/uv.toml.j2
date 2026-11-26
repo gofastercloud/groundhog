@@ -1,3 +1,6 @@
 # uv config — managed by Ansible
 # Project versions belong in .python-version or project metadata.
 python-preference = "managed"
+# Supply-chain cooldown: ignore packages uploaded in the last 7 days.
+# Override ad-hoc with `uv ... --exclude-newer false` when a brand-new release is needed.
+exclude-newer = "7 days"
