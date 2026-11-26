@@ -1,0 +1,39 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "allowUnsandboxedCommands": false
+  },
+  "permissions": {
+    "deny": {{ ([
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Read(./**/*.key)",
+      "Read(./**/*.pem)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(~/.aws/**)",
+      "Read(~/.config/gh/**)",
+      "Read(~/.config/private/**)",
+      "Read(~/.gnupg/**)",
+      "Read(~/.kube/**)",
+      "Read(~/.netrc)",
+      "Read(~/.secrets/**)",
+      "Read(~/.ssh/**)",
+      "Read(~/.supabase/**)",
+      "Read(~/.terraform.d/**)"
+    ] + (claude_code_extra_deny | default([]))) | to_nice_json }}
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v ruff >/dev/null 2>&1 || exit 0; f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.py) ruff format -q \"$f\" && ruff check --fix -q \"$f\" || true;; esac"
+          }
+        ]
+      }
+    ]
+  }
+}

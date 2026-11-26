@@ -72,6 +72,7 @@ brew "mtr"                          # Network diagnostic tool
 brew "oha"                          # HTTP load generator with HTTP/2 and structured output
 
 # ── Security ─────────────────────────────────────────────────────────
+brew "age"                          # Modern file encryption (pairs with sops/secrets)
 brew "openssh"                      # OpenSSH with PQC KEX and FIDO2 support
 brew "pam-reattach"                 # Touch ID support in tmux
 brew "trufflehog"                   # Secret scanning tool

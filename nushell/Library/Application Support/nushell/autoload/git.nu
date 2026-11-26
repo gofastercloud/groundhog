@@ -78,12 +78,16 @@ def gmain [] {
   if $ref.exit_code == 0 { $ref.stdout | str trim | str replace 'refs/remotes/origin/' '' } else { "main" }
 }
 
-# Worktrees as a table, or add/remove one.
-#   gwt                 list
-#   gwt add feat/x      new worktree at ../<repo>-feat-x on a new branch
-#   gwt rm feat/x
-def --env gwt [action?: string, branch?: string] {
-  if $action in [add rm] and ($branch | is-empty) {
+# Worktrees as a table, or add/open/remove one (ideal for parallel coding agents).
+#   gwt                       list worktrees
+#   gwt add feat/x            new worktree at ../<repo>-feat-x on a new branch
+#   gwt add feat/x --sesh     same, and open it in a dedicated sesh/tmux session
+#   gwt open feat/x           open an existing worktree in sesh/tmux
+#   gwt rm feat/x             remove worktree for branch
+# If the repo contains a `.worktreeinclude` file (one relative path per line),
+# listed untracked files are copied into the new worktree automatically.
+def --env gwt [action?: string, branch?: string, --sesh (-s)] {
+  if $action in [add open rm] and ($branch | is-empty) {
     error make { msg: $"usage: gwt ($action) <branch>" }
   }
   match $action {
@@ -99,14 +103,35 @@ def --env gwt [action?: string, branch?: string] {
       let root = (^git rev-parse --show-toplevel | str trim)
       let dir = ($root | path dirname | path join $"($root | path basename)-($branch | str replace -a '/' '-')")
       ^git worktree add -b $branch $dir
-      cd $dir
+      let inc = ($root | path join ".worktreeinclude")
+      if ($inc | path exists) {
+        for rel in (open --raw $inc | lines | each { str trim } | where {|l| ($l | is-not-empty) and (not ($l | str starts-with "#")) }) {
+          let src = ($root | path join $rel)
+          let dst = ($dir | path join $rel)
+          if ($src | path exists) {
+            mkdir ($dst | path dirname)
+            cp -r $src $dst
+          }
+        }
+      }
+      if $sesh and (which sesh | is-not-empty) {
+        ^sesh connect $dir
+      } else {
+        cd $dir
+      }
+    }
+    "open" => {
+      let wt = (gwt | where branch == $branch)
+      if ($wt | is-empty) { error make { msg: $"no worktree for ($branch)" } }
+      let target = ($wt | first | get path)
+      if (which sesh | is-not-empty) { ^sesh connect $target } else { cd $target }
     }
     "rm" => {
       let wt = (gwt | where branch == $branch)
       if ($wt | is-empty) { error make { msg: $"no worktree for ($branch)" } }
       ^git worktree remove ($wt | first | get path)
     }
-    _ => { error make { msg: "usage: gwt [ls|add <branch>|rm <branch>]" } }
+    _ => { error make { msg: "usage: gwt [ls|add <branch> [--sesh]|open <branch>|rm <branch>]" } }
   }
 }
 

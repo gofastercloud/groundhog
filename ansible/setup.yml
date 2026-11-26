@@ -5,7 +5,7 @@
 # Selective runs with tags:
 #   ansible-playbook ansible/setup.yml --ask-become-pass --tags "homebrew,defaults,dotfiles"
 #
-# Available tags: sudo, homebrew, defaults, dock, dev-tools, yubikey, immurok, dotfiles, custom
+# Available tags: sudo, homebrew, defaults, dock, dev-tools, agents, claude, antigravity, yubikey, immurok, dotfiles, custom
 #
 # Variable precedence (lowest -> highest):
 #   1. ansible/vars/default.config.yml  (public defaults)
@@ -96,6 +96,8 @@
     - {role: macos_defaults, tags: ['defaults']}
     - {role: dock, tags: ['dock']}
     - {role: dev_tools, tags: ['dev-tools']}
+    - {role: claude_code, tags: ['claude', 'agents'], when: claude_code_enabled | bool}
+    - {role: antigravity, tags: ['antigravity', 'agents'], when: antigravity_enabled | bool}
     - {role: yubikey, tags: ['yubikey'], when: yubikey_enabled | bool}
     - {role: immurok, tags: ['immurok'], when: immurok_enabled | bool}
 

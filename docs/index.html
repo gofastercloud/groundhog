@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>groundhog — Wake up on a brand-new Mac with the exact same desk</title>
+  <meta name="description" content="Opinionated, security-first macOS workstation automation built on Ansible, Homebrew, GNU Stow, Nushell, PQC SSH, and a clean private overlay for agentic developers.">
+  <meta property="og:title" content="groundhog — macOS Workstation Automation">
+  <meta property="og:description" content="Ansible, Homebrew, GNU Stow, PQC SSH, Secretive, and a clean private custom/ overlay for security-conscious agentic developers.">
+  <meta property="og:image" content="images/groundhog-logo.jpg">
+  <meta name="theme-color" content="#11111b">
+  <link rel="icon" type="image/jpeg" href="images/groundhog-logo.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+  <header class="site-header">
+    <nav class="nav container">
+      <a href="#top" class="brand">
+        <img src="images/groundhog-logo.jpg" alt="Groundhog logo" class="brand-icon">
+        <span class="brand-name">groundhog</span>
+      </a>
+      <div class="nav-links">
+        <a href="#demo">Live CLI</a>
+        <a href="#layers">Overlay</a>
+        <a href="#builder">Config Builder</a>
+        <a href="#security">Agentic Security</a>
+        <a href="https://github.com/gofastercloud/groundhog/blob/main/AGENTIC.md" target="_blank" rel="noopener">Agentic Guide</a>
+        <a href="https://github.com/gofastercloud/groundhog" class="btn btn-sm btn-ghost" target="_blank" rel="noopener">GitHub ↗</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <!-- Hero -->
+    <section class="hero container">
+      <div class="hero-badge">
+        <span class="pulse-dot"></span>
+        macOS · Ansible · Homebrew · GNU Stow · Nushell · ML-KEM-768 PQC
+      </div>
+
+      <div class="hero-logo-wrap">
+        <div class="hero-logo-glow"></div>
+        <img src="images/groundhog-logo.jpg" alt="Groundhog mascot popping out of a holographic macOS terminal" class="hero-logo">
+      </div>
+
+      <h1 class="hero-title">
+        Wake up on a new Mac.<br>
+        <span class="gradient-text">Get the exact same desk back.</span>
+      </h1>
+
+      <p class="hero-sub">
+        A security-first macOS baseline for agentic developers. Clean public defaults in <code>groundhog</code>,
+        everything personal in your own git-ignored <code>custom/</code> repo. Zero rebase battles.
+      </p>
+
+      <div class="hero-cta">
+        <a href="#demo" class="btn btn-primary">Watch the Bootstrap</a>
+        <a href="#builder" class="btn btn-secondary">Build Your Overlay</a>
+        <a href="https://github.com/gofastercloud/groundhog" class="btn btn-ghost" target="_blank" rel="noopener">View Source</a>
+      </div>
+
+      <div class="hero-install">
+        <div class="install-bar">
+          <span class="prompt-chevron">❯</span>
+          <code id="hero-cmd">git clone https://github.com/gofastercloud/groundhog.git ~/groundhog &amp;&amp; cd ~/groundhog &amp;&amp; bash ansible/bootstrap.sh</code>
+          <button class="copy-btn" data-copy-target="hero-cmd" aria-label="Copy bootstrap command">Copy</button>
+        </div>
+      </div>
+
+      <div class="hero-pills">
+        <span class="pill pill-teal">ML-KEM-768 PQC SSH</span>
+        <span class="pill pill-lavender">Secretive Secure Enclave</span>
+        <span class="pill pill-mauve">Single-Auth Sudo Helper</span>
+        <span class="pill pill-peach">gwt + sesh + agent-box</span>
+        <span class="pill pill-green">Zero MAS Sign-in Friction</span>
+      </div>
+    </section>
+
+    <!-- Animated CLI Demo -->
+    <section id="demo" class="section container">
+      <div class="section-head">
+        <span class="eyebrow">Animated CLI Walkthrough</span>
+        <h2>From bare metal to hardened desk in minutes</h2>
+        <p>Switch tabs to see how Groundhog bootstraps a fresh Mac, spins up isolated parallel agent worktrees, and negotiates post-quantum SSH.</p>
+      </div>
+
+      <div class="terminal-shell">
+        <div class="terminal-bar">
+          <div class="traffic-lights" aria-hidden="true">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <div class="terminal-tabs" role="tablist">
+            <button class="term-tab active" role="tab" aria-selected="true" data-scene="bootstrap">1. Fresh Bootstrap</button>
+            <button class="term-tab" role="tab" aria-selected="false" data-scene="agentic">2. Parallel Agents</button>
+            <button class="term-tab" role="tab" aria-selected="false" data-scene="pqc">3. PQC SSH + Secretive</button>
+          </div>
+          <div class="terminal-controls">
+            <button id="speed-btn" class="ctrl-btn" title="Toggle playback speed">1x</button>
+            <button id="replay-btn" class="ctrl-btn" title="Replay animation">↻ Replay</button>
+          </div>
+        </div>
+        <div class="terminal-body" id="terminal-output" aria-live="polite"></div>
+        <div class="terminal-footer">
+          <span class="term-hint" id="term-caption">Ghostty · Nushell · oh-my-posh · Catppuccin Mocha</span>
+          <button class="copy-btn" id="copy-scene-cmd">Copy commands</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Overlay Architecture -->
+    <section id="layers" class="section container">
+      <div class="section-head">
+        <span class="eyebrow">Public Core + Private Overlay</span>
+        <h2>Keep your secrets private, pull upstream forever</h2>
+        <p>Click a layer to see how Groundhog merges public defaults with your own private <code>groundhog-private</code> repo — no submodules, no sanitisation scripts, no merge conflicts.</p>
+      </div>
+
+      <div class="layers-grid">
+        <div class="layer-tabs">
+          <button class="layer-card active" data-layer="core">
+            <div class="layer-num">01</div>
+            <div>
+              <h3>Public Core (<code>groundhog</code>)</h3>
+              <p>Hardware-agnostic terminal, editor, PQC SSH, macOS defaults, OrbStack hardening, and VS Code extensions.</p>
+            </div>
+          </button>
+          <button class="layer-card" data-layer="custom">
+            <div class="layer-num">02</div>
+            <div>
+              <h3>Private Overlay (<code>custom/</code>)</h3>
+              <p>Your own private Git repo (<code>groundhog-private</code>) — feature flags, personal Brewfile, SSH hosts, AWS/AI configs.</p>
+            </div>
+          </button>
+          <button class="layer-card" data-layer="local">
+            <div class="layer-num">03</div>
+            <div>
+              <h3>Per-Machine Local (<code>*.local</code>)</h3>
+              <p>Untracked overrides for a single Mac — extra packages, per-Mac signing keys, and <code>0600</code> runtime secrets.</p>
+            </div>
+          </button>
+        </div>
+
+        <div class="layer-inspector" id="layer-inspector">
+          <!-- Populated dynamically by app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Overlay Builder -->
+    <section id="builder" class="section container">
+      <div class="section-head">
+        <span class="eyebrow">Interactive Config Builder</span>
+        <h2>Craft your <code>custom/config.yml</code></h2>
+        <p>Toggle the optional hardware, agent, and remote-access flags you want. Everything is off by default in the public repo so nobody installs what they don't need.</p>
+      </div>
+
+      <div class="builder-grid">
+        <div class="builder-toggles">
+          <label class="toggle-row">
+            <div>
+              <strong>Claude Code Baseline</strong>
+              <span><code>claude_code_enabled</code> — Seatbelt sandbox on, secret-path deny list, ruff hook</span>
+            </div>
+            <input type="checkbox" class="flag-toggle" data-flag="claude_code_enabled" checked>
+            <span class="switch"></span>
+          </label>
+
+          <label class="toggle-row">
+            <div>
+              <strong>Antigravity CLI Baseline</strong>
+              <span><code>antigravity_enabled</code> — Templated <code>trustedWorkspaces</code> without hardcoded paths</span>
+            </div>
+            <input type="checkbox" class="flag-toggle" data-flag="antigravity_enabled" checked>
+            <span class="switch"></span>
+          </label>
+
+          <label class="toggle-row">
+            <div>
+              <strong>Inbound PQC SSH &amp; Mosh</strong>
+              <span><code>remote_login_enabled</code> — Deploys <code>050-hardening.conf</code> ahead of macOS defaults</span>
+            </div>
+            <input type="checkbox" class="flag-toggle" data-flag="remote_login_enabled">
+            <span class="switch"></span>
+          </label>
+
+          <label class="toggle-row">
+            <div>
+              <strong>YubiKey Break-Glass</strong>
+              <span><code>yubikey_enabled</code> — PAM U2F sudo + FIDO2 SSH + GPG agent configuration</span>
+            </div>
+            <input type="checkbox" class="flag-toggle" data-flag="yubikey_enabled">
+            <span class="switch"></span>
+          </label>
+
+          <label class="toggle-row">
+            <div>
+              <strong>immurok Fingerprint Key</strong>
+              <span><code>immurok_enabled</code> — Wires <code>pam_immurok</code> and keeps its SSH agent disabled</span>
+            </div>
+            <input type="checkbox" class="flag-toggle" data-flag="immurok_enabled">
+            <span class="switch"></span>
+          </label>
+        </div>
+
+        <div class="builder-preview">
+          <div class="preview-header">
+            <span>custom/config.yml</span>
+            <button class="copy-btn" id="copy-yaml-btn">Copy YAML</button>
+          </div>
+          <pre><code id="yaml-output"></code></pre>
+          <div class="preview-footer">
+            <code>./dotfiles.sh init-custom</code>
+            <span class="muted">scaffolds <code>custom/</code> as a fresh private Git repo</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Security & Agentic Bento Grid -->
+    <section id="security" class="section container">
+      <div class="section-head">
+        <span class="eyebrow">Built for Security-Conscious Agentic Coding</span>
+        <h2>Defence in depth without slowing you down</h2>
+        <p>Deny lists alone are polite suggestions. Groundhog puts real OS, hardware, network, and supply-chain boundaries underneath your agents.</p>
+      </div>
+
+      <div class="bento-grid">
+        <article class="bento-card accent-teal">
+          <div class="card-icon">🔐</div>
+          <h3>Zero Private Keys on Disk</h3>
+          <p><strong>Secretive</strong> keeps SSH auth and Git signing keys non-exportable inside Apple's Secure Enclave, paired with <code>mlkem768x25519-sha256</code> PQC KEX, ChaCha20-Poly1305 AEAD, and <code>ForwardAgent no</code>.</p>
+        </article>
+
+        <article class="bento-card accent-lavender">
+          <div class="card-icon">📦</div>
+          <h3>Disposable <code>agent-box</code></h3>
+          <p>Drop into an offline OrbStack container mounting <em>only</em> <code>$PWD:/workspace</code> with <code>--cap-drop=ALL</code> and <code>no-new-privileges</code> — zero host <code>~/.ssh</code>, <code>~/.aws</code>, or env leakage.</p>
+        </article>
+
+        <article class="bento-card accent-mauve">
+          <div class="card-icon">🌿</div>
+          <h3>Parallel Agents with <code>gwt</code></h3>
+          <p><code>gwt add feat/x --sesh</code> creates an isolated Git worktree, copies <code>.worktreeinclude</code> files, and launches a dedicated <code>sesh</code>/<code>tmux</code> session so concurrent agents never collide.</p>
+        </article>
+
+        <article class="bento-card accent-peach">
+          <div class="card-icon">🛡️</div>
+          <h3>Supply-Chain Locks</h3>
+          <p><code>npmrc</code> ships with <code>ignore-scripts=true</code>, <code>git</code> verifies <code>fsckObjects=true</code>, <code>pip</code> refuses global installs outside <code>uv</code> venvs, and Gitleaks + TruffleHog + OSV-Scanner guard every repo.</p>
+        </article>
+
+        <article class="bento-card accent-green">
+          <div class="card-icon">⚡</div>
+          <h3>Single-Auth Ansible Helper</h3>
+          <p><code>./dotfiles.sh ansible</code> solves macOS Touch ID prompt spam without <code>NOPASSWD</code>: a <code>visudo</code>-checked temporary global ticket keeps workers authenticated, then deletes itself and runs <code>sudo -k</code> on exit.</p>
+        </article>
+
+        <article class="bento-card accent-sky">
+          <div class="card-icon">🔑</div>
+          <h3>Scoped Runtime Secrets</h3>
+          <p>API tokens live in <code>~/.config/private/secrets.env</code> (<code>0600</code>) — never exported in shell profiles. Load them for one command via <code>with-secrets</code>, or encrypt at rest with <code>age</code>.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Bottom CTA -->
+    <section class="cta-banner container">
+      <div class="cta-inner">
+        <h2>Ready for your own Groundhog Day?</h2>
+        <p>Clone it, run <code>./dotfiles.sh init-custom</code>, and make your next fresh Mac setup boring in the best possible way.</p>
+        <div class="hero-cta">
+          <a href="https://github.com/gofastercloud/groundhog" class="btn btn-primary" target="_blank" rel="noopener">Get Groundhog on GitHub</a>
+          <a href="https://github.com/gofastercloud/groundhog/blob/main/AGENTIC.md" class="btn btn-secondary" target="_blank" rel="noopener">Read AGENTIC.md</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer container">
+    <p>
+      <strong>groundhog</strong> · Unlicense (Public Domain) · Built with Ansible, Homebrew, GNU Stow, Nushell, Ghostty, Neovim, Secretive, OrbStack &amp; Catppuccin Mocha.
+    </p>
+    <p class="footer-links">
+      <a href="https://github.com/gofastercloud/groundhog" target="_blank" rel="noopener">GitHub</a> ·
+      <a href="https://github.com/gofastercloud/groundhog/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Contributing</a> ·
+      <a href="https://github.com/gofastercloud/groundhog/blob/main/SECURITY.md" target="_blank" rel="noopener">Security</a> ·
+      <a href="https://github.com/gofastercloud/groundhog/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a>
+    </p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

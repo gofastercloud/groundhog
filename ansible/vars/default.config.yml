@@ -15,6 +15,15 @@ remote_login_enabled: false
 mosh_enabled: true
 yubikey_enabled: false
 immurok_enabled: false
+claude_code_enabled: false
+antigravity_enabled: false
+
+# Extra Claude Code deny patterns merged alongside the hardened public defaults.
+claude_code_extra_deny: []
+
+# Directories trusted by Antigravity CLI when antigravity_enabled is true.
+antigravity_trusted_workspaces:
+  - "{{ home_dir }}/Code"
 
 # Minutes sudo caches credentials per TTY (macOS default 5). 1 = 60 seconds,
 # keeping rapid follow-up sudo commands smooth without long-lived elevation.

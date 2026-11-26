@@ -1,0 +1,65 @@
+---
+# claude_code — Hardened baseline settings for Claude Code (opt-in).
+# Merges OS-level sandboxing, secret-path deny rules, force-push blocks, and
+# the ruff PostToolUse formatter into ~/.claude/settings.json without clobbering
+# existing user preferences (plugins, theme, model choices).
+
+- name: Ensure Claude Code config directory exists
+  ansible.builtin.file:
+    path: "{{ home_dir }}/.claude"
+    state: directory
+    mode: "0700"
+
+- name: Render Claude Code baseline fragment to temporary file
+  ansible.builtin.template:
+    src: baseline-settings.json.j2
+    dest: "{{ home_dir }}/.claude/.groundhog-baseline.json"
+    mode: "0600"
+  changed_when: false
+
+- name: Merge hardened baseline into ~/.claude/settings.json
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_playbook_python }}"
+      - -c
+      - |
+        import json, pathlib, sys
+        target = pathlib.Path(sys.argv[1])
+        baseline = json.loads(pathlib.Path(sys.argv[2]).read_text())
+        current = json.loads(target.read_text()) if target.exists() else {}
+        before = json.dumps(current, sort_keys=True)
+
+        # Enforce OS-level sandboxing
+        sb = current.setdefault("sandbox", {})
+        sb["enabled"] = True
+        sb["allowUnsandboxedCommands"] = False
+
+        # Merge deny rules (preserve any extra user rules)
+        perms = current.setdefault("permissions", {})
+        existing_deny = perms.get("deny", [])
+        merged_deny = list(existing_deny)
+        for rule in baseline["permissions"]["deny"]:
+            if rule not in merged_deny:
+                merged_deny.append(rule)
+        perms["deny"] = sorted(set(merged_deny))
+
+        # Seed PostToolUse ruff hook if no PostToolUse hooks exist yet
+        hooks = current.setdefault("hooks", {})
+        if not hooks.get("PostToolUse"):
+            hooks["PostToolUse"] = baseline["hooks"]["PostToolUse"]
+
+        after = json.dumps(current, sort_keys=True)
+        if before != after or not target.exists():
+            target.write_text(json.dumps(current, indent=2) + "\n")
+            target.chmod(0o600)
+            print("CHANGED")
+      - "{{ home_dir }}/.claude/settings.json"
+      - "{{ home_dir }}/.claude/.groundhog-baseline.json"
+  register: claude_code_merge
+  changed_when: "'CHANGED' in claude_code_merge.stdout"
+
+- name: Remove temporary baseline fragment
+  ansible.builtin.file:
+    path: "{{ home_dir }}/.claude/.groundhog-baseline.json"
+    state: absent
+  changed_when: false

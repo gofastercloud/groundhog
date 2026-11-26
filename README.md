@@ -6,6 +6,8 @@
 
 > Wake up on a brand-new Mac, run one script, and get the exact same desk back.
 
+**Interactive site:** [gofastercloud.github.io/groundhog](https://gofastercloud.github.io/groundhog/) · **Agentic coding guide:** [AGENTIC.md](AGENTIC.md)
+
 Groundhog is a macOS workstation setup built on [Ansible](https://docs.ansible.com/), [Homebrew](https://brew.sh/), and [GNU Stow](https://www.gnu.org/software/stow/). It sets up a Nushell-first terminal (Ghostty, tmux, Neovim, Catppuccin Mocha), `uv` and `mise` for runtimes, post-quantum-first SSH with [Secretive](https://github.com/maxgoedjen/secretive), sensible macOS defaults, VS Code settings and extensions, and hardened OrbStack settings.
 
 The twist is the **`custom/` overlay**. Everything personal (paid apps, Mac App Store installs, homelab SSH hosts, cloud profiles, YubiKey or fingerprint-key plumbing, and your Dock) lives in your own separate private Git repo cloned into `custom/`. Groundhog ignores `custom/`, so you can pull updates from upstream forever without fighting merge conflicts in your Brewfile or worrying about accidentally pushing private config to a public repo.
@@ -127,6 +129,8 @@ Off by default in `ansible/vars/default.config.yml`; turn on what you use in `cu
 |------|---------|--------------|
 | `remote_login_enabled` | `false` | Enables macOS Remote Login with `/etc/ssh/sshd_config.d/050-hardening.conf` (loads ahead of Apple's `100-macos.conf` so PQC KEX wins) |
 | `mosh_enabled` | `true` | Allows Homebrew `mosh-server` through the firewall when `remote_login_enabled` is on |
+| `claude_code_enabled` | `false` | Merges Seatbelt sandboxing, secret-path deny rules, and a `ruff` hook into `~/.claude/settings.json` |
+| `antigravity_enabled` | `false` | Templates `~/.gemini/antigravity-cli/settings.json` with `trustedWorkspaces` |
 | `yubikey_enabled` | `false` | Enables the `yubikey` role and `pam_u2f` sudo auth (once `~/.config/Yubico/u2f_keys` exists) |
 | `immurok_enabled` | `false` | Enables the `immurok` role (keeps its SSH agent and Quick Fill off) and `pam_immurok` sudo auth |
 

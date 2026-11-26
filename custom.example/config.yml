@@ -1,9 +1,11 @@
 ---
 # Private overlay overrides (loaded after ansible/vars/default.config.yml).
 
-# Enable optional hardware or inbound SSH modules:
+# Enable optional hardware, agent, or inbound SSH modules:
 # remote_login_enabled: true
 # mosh_enabled: true
+# claude_code_enabled: true
+# antigravity_enabled: true
 # yubikey_enabled: true
 # immurok_enabled: true
 

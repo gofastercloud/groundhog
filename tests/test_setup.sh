@@ -66,6 +66,7 @@ TMUX_CONF="$ROOT/tmux/.tmux.conf"
 README="$ROOT/README.md"
 
 # Core Brewfile checks (public defaults stay clean of personal/hardware/MAS bloat).
+assert_manifest_entry "$BREWFILE" brew age
 assert_manifest_entry "$BREWFILE" brew shellcheck
 assert_manifest_entry "$BREWFILE" brew ansible-lint
 assert_manifest_entry "$BREWFILE" brew yamllint
@@ -158,10 +159,21 @@ assert_contains "$DEV_TOOLS_ROLE" 'src: npmrc.j2'
 assert_contains "$DEV_TOOLS_ROLE" 'src: mise.toml.j2'
 assert_contains "$DEV_TOOLS_ROLE" 'cmd: mise install --yes'
 
-# Optional hardware/SSH features default to false in public repo.
+# Optional hardware/SSH/agent features default to false in public repo.
 assert_contains "$DEFAULT_VARS" 'remote_login_enabled: false'
 assert_contains "$DEFAULT_VARS" 'yubikey_enabled: false'
 assert_contains "$DEFAULT_VARS" 'immurok_enabled: false'
+assert_contains "$DEFAULT_VARS" 'claude_code_enabled: false'
+assert_contains "$DEFAULT_VARS" 'antigravity_enabled: false'
+assert_contains "$ROOT/ansible/roles/dev_tools/templates/npmrc.j2" 'ignore-scripts=true'
+assert_contains "$ROOT/git/.gitconfig" 'fsckObjects = true'
+assert_contains "$ROOT/git/.gitconfig" 'allow = user'
+assert_contains "$ROOT/ansible/roles/claude_code/templates/baseline-settings.json.j2" '"allowUnsandboxedCommands": false'
+assert_contains "$ROOT/ansible/roles/antigravity/templates/agy-settings.json.j2" 'antigravity_trusted_workspaces'
+assert_contains "$ROOT/nushell/Library/Application Support/nushell/autoload/git.nu" '.worktreeinclude'
+assert_contains "$ROOT/nushell/Library/Application Support/nushell/autoload/orb.nu" 'def agent-box'
+[[ -f "$ROOT/AGENTIC.md" ]] || fail "missing AGENTIC.md"
+[[ -f "$ROOT/docs/index.html" ]] || fail "missing docs/index.html"
 assert_contains "$DEFAULT_VARS" 'docker.expose_ports_to_lan: "false"'
 assert_contains "$DEFAULT_VARS" 'betterdisplay_shortcuts:'
 assert_contains "$MACOS_DEFAULTS_ROLE" 'Keep Gatekeeper quarantine provenance checks enabled'

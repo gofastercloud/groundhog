@@ -1,0 +1,15 @@
+---
+# antigravity — Hardened workspace trust baseline for Antigravity CLI (opt-in).
+
+- name: Ensure Antigravity CLI config directory exists
+  ansible.builtin.file:
+    path: "{{ home_dir }}/.gemini/antigravity-cli"
+    state: directory
+    mode: "0755"
+
+- name: Write Antigravity CLI settings with templated trusted workspaces
+  ansible.builtin.template:
+    src: agy-settings.json.j2
+    dest: "{{ home_dir }}/.gemini/antigravity-cli/settings.json"
+    mode: "0644"
+    follow: false

@@ -54,3 +54,25 @@ def dprune [--volumes] {
     if $volumes { ^docker system prune --volumes -f } else { ^docker system prune -f }
   }
 }
+
+# Spin up a disposable, isolated container sandbox mounting ONLY the current
+# directory at /workspace (zero ~/.ssh, ~/.aws, ~/.config/private, or host env).
+# Network is disabled by default; pass --net only when outbound access is needed.
+#   agent-box                          offline Debian shell on $PWD
+#   agent-box --net                    same, with outbound network enabled
+#   agent-box --image python:3.14-slim custom image
+def agent-box [--net, --image: string = "debian:trixie-slim"] {
+  let cwd = ($env.PWD | path expand)
+  let net_flag = if $net { "bridge" } else { "none" }
+  print $"Starting isolated agent-box ($image) [network=($net_flag), mount=($cwd):/workspace]"
+  (
+    ^docker run --rm -it --init
+      --network $net_flag
+      --cap-drop=ALL
+      --security-opt=no-new-privileges:true
+      -v $"($cwd):/workspace"
+      -w /workspace
+      $image
+      sh -c 'command -v bash >/dev/null && exec bash || exec sh'
+  )
+}
