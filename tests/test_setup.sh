@@ -260,9 +260,11 @@ while IFS= read -r flag; do
 done < <(grep -Eo '^[a-z0-9_]+_enabled:' "$DEFAULT_VARS" | tr -d ':')
 
 # Shell syntax checks
+[[ -x "$ROOT/scripts/vm_test.sh" ]] || fail "scripts/vm_test.sh must be executable"
 bash -n "$GROUNDHOG_BIN"
 bash -n "$DOTFILES_SHIM"
 bash -n "$ROOT/ansible/bootstrap.sh"
+bash -n "$ROOT/scripts/vm_test.sh"
 bash -n "$ROOT/git/.config/git/template/hooks/pre-commit"
 zsh -n "$ZSHRC"
 zsh -n "$ROOT/zsh/.zprofile"
@@ -283,7 +285,7 @@ if command -v nu >/dev/null; then
 fi
 
 # Every top-level directory is either a stow package or explicitly listed non-package directory.
-NON_PACKAGE_DIRS=(ansible custom custom.example docs homebrew skills src ssh tests)
+NON_PACKAGE_DIRS=(ansible custom custom.example docs homebrew scripts skills src ssh tests)
 [[ -f "$ROOT/docs/images/groundhog-logo.jpg" ]] || fail "missing docs/images/groundhog-logo.jpg"
 stow_packages=$(PYTHONPATH="$ROOT/src" python3 -c 'from groundhog.config import STOW_PACKAGES; print(" ".join(STOW_PACKAGES))')
 [[ -n "$stow_packages" ]] || fail "could not read STOW_PACKAGES from groundhog.config"

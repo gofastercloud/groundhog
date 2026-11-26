@@ -59,26 +59,39 @@
     mode: "0644"
     src: npmrc.j2
 
+- name: Check whether mise is installed
+  ansible.builtin.command:
+    cmd: which mise
+  register: dev_tools_mise_bin
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
 - name: Check for missing mise runtimes
   ansible.builtin.command:
     cmd: mise ls --missing --global
   register: dev_tools_mise_missing
   changed_when: false
   check_mode: false
+  when: dev_tools_mise_bin.rc == 0
 
 - name: Install configured runtimes via mise
   ansible.builtin.command:
     cmd: mise install --yes
   register: dev_tools_mise_install
-  changed_when: dev_tools_mise_missing.stdout | trim != ''
-  when: dev_tools_mise_missing.stdout | trim != ''
+  changed_when: (dev_tools_mise_missing.stdout | default('') | trim) != ''
+  when:
+    - dev_tools_mise_bin.rc == 0
+    - (dev_tools_mise_missing.stdout | default('') | trim) != ''
 
 - name: Upgrade mise runtimes during explicit maintenance
   ansible.builtin.command:
     cmd: mise upgrade --yes
   register: dev_tools_mise_upgrade
   changed_when: "'upgraded' in (dev_tools_mise_upgrade.stdout ~ dev_tools_mise_upgrade.stderr) | lower"
-  when: mise_update_tools | bool
+  when:
+    - dev_tools_mise_bin.rc == 0
+    - mise_update_tools | bool
   tags: ['maintenance']
 
 - name: Ensure user bin dir

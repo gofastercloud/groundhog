@@ -94,19 +94,24 @@ def get_targets(paths: GroundhogPaths, pkg: str) -> list[str]:
 
 
 def is_managed_link(paths: GroundhogPaths, link_path: Path) -> bool:
-    """Return True if `link_path` is a symlink pointing inside `paths.repo_dir`."""
-    if not link_path.is_symlink():
-        return False
-    raw_target = os.readlink(link_path)
-    repo_str = str(paths.repo_dir)
-    repo_resolved = str(paths.repo_dir.resolve())
-    if raw_target.startswith(repo_str) or raw_target.startswith(repo_resolved):
-        return True
-    try:
-        resolved = (link_path.parent / raw_target).resolve()
-        return str(resolved).startswith(repo_resolved)
-    except OSError:
-        return False
+    """Return True if `link_path` (or a folded Stow parent symlink) resolves into `repo_dir`."""
+    repo_resolved = paths.repo_dir.resolve()
+    if link_path.is_symlink():
+        raw_target = os.readlink(link_path)
+        repo_str = str(paths.repo_dir)
+        if raw_target.startswith(repo_str) or raw_target.startswith(str(repo_resolved)):
+            return True
+        try:
+            resolved = (link_path.parent / raw_target).resolve()
+            return resolved.is_relative_to(repo_resolved)
+        except OSError:
+            return False
+    if link_path.exists() and _has_symlink_ancestor(link_path, paths.home_dir):
+        try:
+            return link_path.resolve().is_relative_to(repo_resolved)
+        except OSError:
+            return False
+    return False
 
 
 def ensure_git_checkout(repo_url: str, target_dir: Path, commit: str) -> None:
@@ -208,7 +213,7 @@ def collect_status(paths: GroundhogPaths, *, include_brew: bool = True) -> Statu
         for rel in get_targets(paths, pkg):
             summary.stowed_total += 1
             home_file = paths.home_dir / rel
-            if home_file.is_symlink() and is_managed_link(paths, home_file):
+            if is_managed_link(paths, home_file):
                 summary.stowed_ok += 1
             else:
                 summary.warnings.append(f"{pkg}: {rel}")
@@ -252,11 +257,10 @@ def cmd_status(paths: GroundhogPaths, *, out: TextIO | None = None) -> int:
         print(f"{s.yellow}[{pkg}]{s.nc}", file=out)
         for rel in get_targets(paths, pkg):
             home_file = paths.home_dir / rel
-            if home_file.is_symlink():
-                if is_managed_link(paths, home_file):
-                    print(f"  {s.green}✓{s.nc} {rel}", file=out)
-                else:
-                    print(f"  {s.red}⚠{s.nc} {rel} -> {os.readlink(home_file)}", file=out)
+            if is_managed_link(paths, home_file):
+                print(f"  {s.green}✓{s.nc} {rel}", file=out)
+            elif home_file.is_symlink():
+                print(f"  {s.red}⚠{s.nc} {rel} -> {os.readlink(home_file)}", file=out)
             elif home_file.exists():
                 print(f"  {s.red}✗{s.nc} {rel} (not linked)", file=out)
             else:
@@ -400,6 +404,28 @@ def cmd_capture(paths: GroundhogPaths, *, out: TextIO | None = None) -> int:
     return 0
 
 
+def _has_symlink_ancestor(path: Path, stop_at: Path) -> bool:
+    """Return True if any parent directory between `stop_at` and `path` is a symlink."""
+    cur = path.parent
+    while cur != stop_at and cur != cur.parent:
+        if cur.is_symlink():
+            return True
+        cur = cur.parent
+    return False
+
+
+def _backup_existing_file(target: Path, backup_dir: Path) -> Path:
+    """Move an unmanaged existing file into `backup_dir` without clobbering prior backups."""
+    stamp = int(time.time())
+    candidate = backup_dir / f"{target.name}.backup.{stamp}"
+    counter = 1
+    while candidate.exists():
+        candidate = backup_dir / f"{target.name}.backup.{stamp}.{counter}"
+        counter += 1
+    shutil.move(str(target), str(candidate))
+    return candidate
+
+
 def cmd_link(
     paths: GroundhogPaths,
     *,
@@ -433,6 +459,16 @@ def cmd_link(
             if target.is_symlink() and not target.exists():
                 print(f"    {s.yellow}Removing broken link{s.nc}: {rel}", file=out)
                 target.unlink()
+            elif (
+                entry.is_file()
+                and target.exists()
+                and not target.is_symlink()
+                and not target.is_dir()
+                and not _has_symlink_ancestor(target, paths.home_dir)
+                and not target.resolve().is_relative_to(paths.repo_dir.resolve())
+            ):
+                backup_path = _backup_existing_file(target, paths.backup_dir)
+                print(f"    {s.yellow}Backing up{s.nc} {rel} -> {backup_path}", file=out)
 
         stow_cmd = ["stow", "-v", "-t", str(paths.home_dir)]
         if pkg in NO_FOLDING_PACKAGES:
@@ -471,10 +507,8 @@ def cmd_link(
         if target.is_symlink():
             target.unlink()
         elif target.exists():
-            backup_name = f"{target.name}.backup.{int(time.time())}"
-            backup_path = paths.backup_dir / backup_name
+            backup_path = _backup_existing_file(target, paths.backup_dir)
             print(f"  {s.yellow}Backing up{s.nc} {target} -> {backup_path}", file=out)
-            shutil.move(str(target), str(backup_path))
         target.symlink_to(src)
         print(f"  {s.green}→{s.nc} {target}", file=out)
 
@@ -820,6 +854,29 @@ def cmd_ansible(
         if "--diff" not in args:
             args.append("--diff")
 
+    # Headless VMs / CI runners with NOPASSWD sudo (or a pre-existing global ticket)
+    # already satisfy setsid-detached Ansible workers; skip sudoers staging and `sudo -v`.
+    detached_sudo = subprocess.run(
+        ["sudo", "-n", "true"],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+        check=False,
+    )
+    if detached_sudo.returncode == 0:
+        print(
+            f"{s.dim}Using existing non-interactive sudo session for Ansible...{s.nc}",
+            file=out,
+            flush=True,
+        )
+        proc = subprocess.run(
+            ["ansible-playbook", str(paths.ansible_playbook), *args],
+            cwd=paths.repo_dir,
+            check=False,
+        )
+        return proc.returncode
+
     stop_event = threading.Event()
     sudoers_installed = False
 
@@ -847,7 +904,11 @@ def cmd_ansible(
     prev_term = signal.signal(signal.SIGTERM, _handle_signal)
 
     try:
-        print(f"{s.blue}Preparing temporary session-scoped sudo for Ansible...{s.nc}", file=out)
+        print(
+            f"{s.blue}Preparing temporary session-scoped sudo for Ansible...{s.nc}",
+            file=out,
+            flush=True,
+        )
         setup_script = (
             "set -eu; "
             "umask 0377; "
@@ -867,6 +928,11 @@ def cmd_ansible(
         sudoers_installed = True
 
         # Stamp the global ticket so setsid-detached Ansible workers inherit it.
+        print(
+            f"{s.dim}Stamping session-wide sudo ticket (second Touch ID prompt)...{s.nc}",
+            file=out,
+            flush=True,
+        )
         subprocess.run(["sudo", "-v"], check=True)
 
         def _keepalive() -> None:

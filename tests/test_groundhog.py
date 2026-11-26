@@ -17,6 +17,7 @@ from groundhog.helpers import (
     merge_claude_settings_file,
 )
 from groundhog.ops import (
+    cmd_ansible,
     cmd_capture,
     cmd_diff,
     cmd_init_custom,
@@ -193,6 +194,16 @@ def test_link_status_diff_capture_unlink_in_isolated_home(tmp_path: Path) -> Non
     )
     (repo / "ssh" / ".ssh").mkdir(parents=True)
     (repo / "ssh" / ".ssh" / "config").write_text("Host *\n", encoding="utf-8")
+    (repo / "ghostty" / ".config" / "ghostty").mkdir(parents=True)
+    (repo / "ghostty" / ".config" / "ghostty" / "config").write_text(
+        "window-save-state = never\n",
+        encoding="utf-8",
+    )
+    (repo / "atuin" / ".config" / "atuin").mkdir(parents=True)
+    (repo / "atuin" / ".config" / "atuin" / "config.toml").write_text(
+        "auto_sync = false\n",
+        encoding="utf-8",
+    )
     (repo / "groundhog").write_text("#!/usr/bin/env bash\n", encoding="utf-8")
 
     # Custom overlay with one link and one app-managed copy
@@ -203,7 +214,8 @@ def test_link_status_diff_capture_unlink_in_isolated_home(tmp_path: Path) -> Non
     (custom / "app.json").write_text('{"v": 1}\n', encoding="utf-8")
     (custom / "copies.conf").write_text("app.json:~/.config/app/app.json\n", encoding="utf-8")
 
-    # Pre-existing ~/.ssh/config should be backed up before symlinking
+    # Pre-existing ~/.zprofile (stowed) and ~/.ssh/config (manual) should both be backed up
+    (home / ".zprofile").write_text("# pre-existing zprofile\n", encoding="utf-8")
     (home / ".ssh").mkdir()
     (home / ".ssh" / "config").write_text("# old config\n", encoding="utf-8")
 
@@ -219,23 +231,40 @@ def test_link_status_diff_capture_unlink_in_isolated_home(tmp_path: Path) -> Non
     )
     assert rc == 0
     assert (home / ".zshrc").is_symlink()
+    assert (home / ".zprofile").is_symlink()
+    assert list((home / ".backups").glob(".zprofile.backup.*"))
     assert (home / ".gitconfig").is_symlink()
     assert not (home / ".config" / "git").is_symlink()  # --no-folding verified!
     assert (home / ".ssh" / "config").is_symlink()
     assert list((home / ".backups").glob("config.backup.*"))
     assert (home / ".local" / "bin" / "groundhog").is_symlink()
     assert (home / ".gitconfig.custom").is_symlink()
+    assert (home / ".config" / "ghostty").is_symlink()
     assert (home / ".config" / "app" / "app.json").read_text(encoding="utf-8") == '{"v": 1}\n'
+
+    # Re-running cmd_link must be idempotent and never move files through folded dir symlinks
+    rc2 = cmd_link(
+        paths,
+        skip_hooks=True,
+        skip_tmux=True,
+        skip_bat=True,
+        out=io.StringIO(),
+        err=io.StringIO(),
+    )
+    assert rc2 == 0
+    assert (repo / "ghostty" / ".config" / "ghostty" / "config").is_file()
+    assert (home / ".config" / "ghostty" / "config").is_file()
 
     # Simulate app modifying copy, then capture back into custom/
     (home / ".config" / "app" / "app.json").write_text('{"v": 2}\n', encoding="utf-8")
     assert cmd_capture(paths, out=io.StringIO()) == 0
     assert (custom / "app.json").read_text(encoding="utf-8") == '{"v": 2}\n'
 
-    # Status and diff run cleanly
+    # Status and diff run cleanly (including folded packages like atuin)
     status_out = io.StringIO()
     assert cmd_status(paths, out=status_out) == 0
     assert ".zshrc" in status_out.getvalue()
+    assert "✓ .config/atuin/config.toml" in status_out.getvalue()
 
     diff_out = io.StringIO()
     assert cmd_diff(paths, out=diff_out) == 0
@@ -288,3 +317,35 @@ def test_cli_forwards_ansible_and_check_flags(
         (["--tags", "dev-tools,agents,dotfiles", "-vv"], False),
         (["--tags", "defaults"], True),
     ]
+
+
+def test_cmd_ansible_skips_sudoers_staging_when_detached_sudo_works(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    calls: list[list[str]] = []
+
+    class FakeProc:
+        def __init__(self, returncode: int = 0) -> None:
+            self.returncode = returncode
+
+    def fake_run(cmd: list[str], **_kwargs: object) -> FakeProc:
+        calls.append(cmd)
+        return FakeProc(0)
+
+    monkeypatch.setattr(
+        "groundhog.ops.shutil.which",
+        lambda _name: "/opt/homebrew/bin/ansible-playbook",
+    )
+    monkeypatch.setattr("groundhog.ops.subprocess.run", fake_run)
+
+    paths = GroundhogPaths(repo_dir=tmp_path, home_dir=tmp_path)
+    out = io.StringIO()
+    rc = cmd_ansible(paths, ["--tags", "sudo"], check=True, out=out, err=io.StringIO())
+
+    assert rc == 0
+    assert calls == [
+        ["sudo", "-n", "true"],
+        ["ansible-playbook", str(paths.ansible_playbook), "--tags", "sudo", "--check", "--diff"],
+    ]
+    assert "non-interactive sudo" in out.getvalue()

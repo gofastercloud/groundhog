@@ -106,13 +106,13 @@
       ansible.builtin.stat:
         path: "{{ dotfiles_dir }}/custom/tasks.yml"
       register: setup_custom_tasks
-      tags: ['custom', 'dev-tools']
+      tags: ['custom', 'dev-tools', 'groundhog-dev']
 
     - name: Run custom overlay tasks (custom/tasks.yml)
       ansible.builtin.include_tasks:
         file: "{{ dotfiles_dir }}/custom/tasks.yml"
       when: setup_custom_tasks.stat.exists
-      tags: ['custom', 'dev-tools']
+      tags: ['custom', 'dev-tools', 'groundhog-dev']
 
     # Run groundhog link to stow configs, manual symlinks, and custom overlay links
     - name: Stow dotfiles and create manual symlinks

@@ -7,7 +7,7 @@ SHELL := /bin/bash
 NU_DIR := nushell/Library/Application Support/nushell
 ALLOW_SKIP ?= 0
 
-.PHONY: tui apply check hooks doctor verify precommit python test nu ansible-syntax ansible-lint verify-custom
+.PHONY: tui apply check hooks doctor verify precommit python test nu ansible-syntax ansible-lint verify-custom vm-test
 
 tui:
 	./groundhog
@@ -117,3 +117,6 @@ ansible-lint:
 
 verify-custom:
 	./groundhog verify-custom
+
+vm-test:
+	scripts/vm_test.sh $(if $(VM_TAGS),--tags "$(VM_TAGS)",) $(if $(VM_IMAGE),--image "$(VM_IMAGE)",)

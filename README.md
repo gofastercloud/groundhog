@@ -166,6 +166,7 @@ Off by default in `ansible/vars/default.config.yml`; turn on what you use in `cu
 make doctor                 # Check required verification tools
 make hooks                  # Install pre-commit and pre-push hooks
 make verify                 # Run full verification suite (strict; ALLOW_SKIP=1 to opt out)
+make vm-test                # Headless end-to-end repeatability test in a disposable Tart macOS VM
 ```
 
 *(A thin `./dotfiles.sh` shim forwards all commands to `./groundhog` for backwards compatibility.)*
