@@ -28,13 +28,19 @@
             | map(attribute='item')
             | list) }}
 
+- name: Initialise Mac App Store entry list
+  ansible.builtin.set_fact:
+    homebrew_mas_apps: []
+
 - name: Read Mac App Store entries across active Brewfiles
   ansible.builtin.set_fact:
     homebrew_mas_apps: >-
-      {{ homebrew_active_brewfiles
-         | map('ansible.builtin.file')
-         | map('regex_findall', '(?m)^mas "([^"]+)", id: ([0-9]+)$')
-         | sum(start=[]) }}
+      {{ homebrew_mas_apps
+         + (lookup('ansible.builtin.file', item)
+            | regex_findall('(?m)^mas "([^"]+)", id: ([0-9]+)$')) }}
+  loop: "{{ homebrew_active_brewfiles }}"
+  loop_control:
+    label: "{{ item | relpath(dotfiles_dir) }}"
 
 - name: Install non-MAS packages from active Brewfiles
   ansible.builtin.command:
