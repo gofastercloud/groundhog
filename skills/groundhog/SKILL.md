@@ -59,6 +59,7 @@ Groundhog splits state cleanly across three layers:
 Set the flag in `custom/config.yml` (or `ansible/vars/config.yml`):
 - `claude_code_enabled: true` — Seatbelt sandbox + widened deny rules + `ruff` hook + Groundhog skill link
 - `antigravity_enabled: true` — templated `trustedWorkspaces` + Groundhog skill link
+- `codex_enabled: true` — hardened `~/.codex/config.toml` scaffold (`workspace-write`, no network, `core` env policy) + Groundhog skill link
 - `remote_login_enabled: true` — hardened `sshd` (`050-hardening.conf`, ML-KEM-768 PQC) + Mosh
 - `yubikey_enabled: true` — FIDO2 `pam_u2f` sudo auth
 - `immurok_enabled: true` — immurok fingerprint key sudo auth

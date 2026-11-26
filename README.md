@@ -147,6 +147,7 @@ Off by default in `ansible/vars/default.config.yml`; turn on what you use in `cu
 | `mosh_enabled` | `true` | Allows Homebrew `mosh-server` through the firewall when `remote_login_enabled` is on |
 | `claude_code_enabled` | `false` | Merges Seatbelt sandboxing, widened secret-path & force-push deny rules, and a `ruff` hook into `~/.claude/settings.json` |
 | `antigravity_enabled` | `false` | Templates `~/.gemini/antigravity-cli/settings.json` with `trustedWorkspaces` |
+| `codex_enabled` | `false` | Scaffolds hardened `~/.codex/config.toml` (`workspace-write` sandbox, `network_access = false`, `core` env filtering) and links the Groundhog skill |
 | `yubikey_enabled` | `false` | Enables the `yubikey` role and `pam_u2f` sudo auth (once `~/.config/Yubico/u2f_keys` exists) |
 | `immurok_enabled` | `false` | Enables the `immurok` role (keeps its SSH agent and Quick Fill off) and `pam_immurok` sudo auth |
 

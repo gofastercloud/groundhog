@@ -1,0 +1,31 @@
+---
+# codex — Hardened baseline config scaffolding for OpenAI Codex CLI (opt-in).
+# Scaffolds ~/.codex/config.toml with recommended sandbox, approval, and
+# environment-filtering controls (force: false so existing user edits are
+# preserved) and links the Groundhog agent skill into ~/.codex/skills/.
+
+- name: Ensure Codex config directory exists
+  ansible.builtin.file:
+    path: "{{ home_dir }}/.codex"
+    state: directory
+    mode: "0700"
+
+- name: Scaffold hardened ~/.codex/config.toml if missing
+  ansible.builtin.template:
+    src: config.toml.j2
+    dest: "{{ home_dir }}/.codex/config.toml"
+    mode: "0600"
+    force: false
+
+- name: Ensure Codex user skills directory exists
+  ansible.builtin.file:
+    path: "{{ home_dir }}/.codex/skills"
+    state: directory
+    mode: "0755"
+
+- name: Link Groundhog agent skill into Codex
+  ansible.builtin.file:
+    src: "{{ dotfiles_dir }}/skills/groundhog"
+    dest: "{{ home_dir }}/.codex/skills/groundhog"
+    state: link
+    force: true

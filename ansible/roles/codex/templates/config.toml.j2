@@ -1,0 +1,26 @@
+# Managed scaffold by Groundhog (ansible/roles/codex).
+# Created with force: false so your own edits (model, MCP servers, profiles)
+# are preserved across Ansible runs.
+
+# Require explicit human approval before actions outside sandbox boundaries.
+approval_policy = "on-request"
+
+# Restrict filesystem writes to the current workspace via macOS Seatbelt.
+sandbox_mode = "workspace-write"
+
+# Deny outbound network access inside the sandbox by default.
+[sandbox_workspace_write]
+network_access = false
+
+# Pass only core shell variables (PATH, HOME, USER, etc.) to spawned commands
+# and keep Codex's default secret/token/key exclusion filters enabled.
+[shell_environment_policy]
+inherit = "core"
+ignore_default_excludes = false
+{% if codex_trusted_projects | default([]) | length > 0 %}
+
+{% for project_path in codex_trusted_projects %}
+[projects."{{ project_path }}"]
+trust_level = "trusted"
+{% endfor %}
+{% endif %}
