@@ -1,38 +1,22 @@
 # Security Policy
 
-## What Counts as a Security Issue
+Groundhog manages shell startup files, SSH/SSHD configuration, `sudo` PAM rules, and macOS firewall settings, so security bugs here matter.
 
-For a dotfiles repository, security issues include:
+## What we care about
 
-- Accidentally committed secrets (API keys, tokens, passwords)
-- Insecure default configurations (overly permissive SSH settings, disabled TLS verification, etc.)
-- Sensitive file paths or patterns missing from `.gitignore`
+- Insecure defaults in `ssh/.ssh/config`, `sshd-hardening.conf.j2`, `roles/sudo`, or `orbstack.yml`
+- Anything that could break `sudo` / PAM lock-in or accidentally widen `NOPASSWD` access
+- Unsafe shell quoting, unpinned remote checkouts, or symlink-following issues in `dotfiles.sh` / Ansible tasks
+- Hardcoded paths, personal identifiers, or missing `.gitignore` patterns that could cause someone to commit secrets
 
-## Reporting
+## Reporting an issue
 
-This is a personal dotfiles repo, so there is no need for private vulnerability reporting. If you spot a security issue, please open a GitHub issue describing:
+- For normal hardening suggestions or non-sensitive bugs, please open a public GitHub issue with the affected file(s) and what you expected to happen.
+- If you spot a live secret, credential, or sensitive vulnerability, please use GitHub's private vulnerability reporting (or flag it clearly so it can be rotated straight away).
 
-- What the issue is
-- Which file(s) are affected
-- Suggested fix, if you have one
+## Security design notes
 
-If the issue involves a live secret that was committed, mention that clearly so it can be rotated and force-pushed promptly.
-
-## Protections in Place
-
-### Gitleaks
-
-This repository runs [Gitleaks](https://github.com/gitleaks/gitleaks) from a local pre-commit hook to block staged secrets. Gitleaks output is redacted by default.
-
-### .gitignore
-
-The following patterns are excluded from version control to prevent accidental commits of sensitive material:
-
-- `*.pem`, `*.key` -- private keys
-- `*.env` -- scoped environment files, including the private secrets file
-
-### General Rules
-
-- **Never commit private SSH keys.** The `ssh/.ssh/config` file is tracked, but key files must never be added.
-- Machine-specific secrets belong in `~/.config/private/secrets.env` with mode `0600` and are loaded only for an explicit command or subshell.
-- Machine-specific Homebrew packages belong in `homebrew/.Brewfile.local` (git-ignored).
+- **No secrets in Git**: Private keys, `.env` files, and `gh` auth tokens (`hosts.yml`) are git-ignored, and [Gitleaks](https://github.com/gitleaks/gitleaks) runs locally on staged changes via `pre-commit`. Local API tokens live in `~/.config/private/secrets.env` (`chmod 600`) and are only injected into a single command via `with-secrets`.
+- **Hardware-bound SSH**: SSH defaults prefer [Secretive](https://github.com/maxgoedjen/secretive) Secure Enclave keys (non-exportable) with optional FIDO2 break-glass, PQC-first key exchange (`mlkem768x25519-sha256`), AEAD-only ciphers, ETM-only MACs, and `ForwardAgent no`.
+- **Fail-safe `sudo` & PAM**: `/etc/pam.d/sudo_local` is rendered atomically from a single template, checked for missing `.so` paths before and after writing, and never edits `/etc/pam.d/sudo` directly. Deleting `/etc/pam.d/sudo_local` from a root shell restores stock macOS `sudo`. `./dotfiles.sh ansible` never uses `NOPASSWD`; its temporary `timestamp_type=global` drop-in is validated with `visudo` and removed on exit along with `sudo -k`.
+- **Clean separation of private data**: Personal configs live in a separate git-ignored `custom/` repository, never mixed into public commit history.

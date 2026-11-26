@@ -205,9 +205,11 @@ assert_contains "$ROOT/git/.gitconfig" 'path = ~/.gitconfig.custom'
 assert_contains "$ROOT/git/.gitconfig" 'path = ~/.gitconfig.local'
 
 # custom.example starter template completeness
-for f in README.md .gitignore config.yml Brewfile gitconfig links.conf copies.conf tasks.yml; do
+for f in AGENTS.md README.md .gitignore .pre-commit-config.yaml config.yml Brewfile gitconfig links.conf copies.conf tasks.yml; do
     [[ -f "$ROOT/custom.example/$f" ]] || fail "missing custom.example/$f"
 done
+[[ -f "$ROOT/AGENTS.md" ]] || fail "missing AGENTS.md"
+[[ -f "$ROOT/CLAUDE.md" ]] || fail "missing CLAUDE.md"
 
 # Test init-custom in an isolated copy
 init_tmp=$(mktemp -d "${TMPDIR:-/tmp}/groundhog-init.XXXXXX")
@@ -239,7 +241,8 @@ if command -v nu >/dev/null; then
 fi
 
 # Every top-level directory is either a stow package or explicitly listed non-package directory.
-NON_PACKAGE_DIRS=(ansible custom custom.example homebrew ssh tests)
+NON_PACKAGE_DIRS=(ansible custom custom.example docs homebrew ssh tests)
+[[ -f "$ROOT/docs/images/groundhog-logo.jpg" ]] || fail "missing docs/images/groundhog-logo.jpg"
 # shellcheck disable=SC2034
 DOTFILES_DIR="$ROOT"
 eval "$(sed -n '/^get_targets() {/,/^}/p' "$DOTFILES_SCRIPT")"
