@@ -11,6 +11,8 @@ In your `custom/config.yml` (or per-machine `ansible/vars/config.yml`), flip on 
 ```yaml
 claude_code_enabled: true
 antigravity_enabled: true
+codex_enabled: true
+agent_git_enabled: true
 
 # Optional: block extra private directories in Claude Code
 claude_code_extra_deny:
@@ -31,6 +33,8 @@ cd ~/groundhog
 What those roles configure for you:
 - **Claude Code** (`roles/claude_code`): merges OS-level Seatbelt sandboxing (`sandbox.enabled: true`, `allowUnsandboxedCommands: false`), widened secret-path `Read`/`Edit`/`Write` deny rules (`~/.ssh/**`, `~/.aws/**`, `~/.config/gh/**`, `~/.gnupg/**`, `~/.config/private/**`, `.env*`, `*.pem`, `*.key`), destructive push blocks (`git push --force`, `--force-with-lease`, `+*`, `--delete`), and an automatic `ruff` formatter hook into `~/.claude/settings.json` without overwriting your existing plugins, theme, or model settings.
 - **Antigravity CLI** (`roles/antigravity`): writes `~/.gemini/antigravity-cli/settings.json` with templated `trustedWorkspaces` (no hardcoded home-directory paths).
+- **Codex CLI** (`roles/codex`): scaffolds `~/.codex/config.toml` (`force: false`) with `approval_policy = "on-request"`, `sandbox_mode = "workspace-write"`, `network_access = false`, and `shell_environment_policy` (`inherit = "core"`).
+- **Agent GitHub broker** (`roles/agent_git`): templates `~/.config/groundhog/agent-git.json`, installs `~/.local/bin/agent-git` and `~/.local/bin/agent-gh` (1-hour single-repo GitHub App tokens + dedicated signing-only SSH key, keeping your Secretive master keys untouched), and links `skills/agent-git` into Claude, Antigravity, and Codex.
 
 ## 2. Defence in depth (why deny lists alone are not enough)
 
@@ -78,7 +82,23 @@ agent-box
 agent-box --net --image python:3.14-slim
 ```
 
-## 5. Secrets & MCP hygiene
+## 5. Autonomous GitHub workflow (`agent-git` & `agent-gh`)
+
+When `agent_git_enabled` is on, agents sign commits with a dedicated, revocable signing-only SSH key and push/PR via **1-hour, single-repository** GitHub App tokens — leaving your Secretive master keys untouched:
+
+```nu
+agent-git checkout -b agent/codex/fix-parser
+agent-git add ...
+AGENT_NAME="Codex Agent" agent-git commit -m "Fix edge case in parser"
+agent-git push -u origin agent/codex/fix-parser
+agent-gh pr create --fill --label agent-authored
+```
+
+- Direct pushes to `main`/`master` and non-`agent/*` branches are blocked locally and enforced server-side via GitHub Branch Rulesets.
+- Repos listed as `human-review` in `agent_git_repo_policies` block `agent-gh pr merge` locally (in addition to GitHub requiring human PR approval); autonomous repos can squash-merge once checks pass.
+- Run `./groundhog agent-git status` to inspect App ID, signing key, Keychain status, and repo policies.
+
+## 6. Secrets & MCP hygiene
 
 - **Organise secrets outside Groundhog.** Groundhog deliberately avoids keeping a plaintext secrets file on disk. Use your preferred secrets manager (such as 1Password CLI `op run`, macOS Keychain, or `sops`/`age`) to inject credentials per command rather than exporting them globally or dropping live `.env` files inside agent workspaces.
 - **Prefer local CLIs over stacking MCP servers.** Tools like `gh`, `uv`, `ruff`, `ast-grep`, `jq`, `yq`, and `difftastic` burn far fewer context tokens than bloated MCP schemas and avoid running unpinned `npx -y` servers.

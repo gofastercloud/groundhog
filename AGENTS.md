@@ -37,6 +37,9 @@ Groundhog manages a macOS developer workstation with Ansible, Homebrew, GNU Stow
 6. **macOS defaults quirks**:
    - Sandboxed apps (Shottr, Secretive) require Full Disk Access for the terminal running Ansible or inspecting their containers.
    - `duti` rejects dynamic (`dyn.*`) UTIs with error `-50` — bind only declared extensions.
+7. **Autonomous GitHub workflow (`agent-git` & `agent-gh`)**:
+   - When `agent_git_enabled` is configured, agents must use `agent-git` and `agent-gh` (see `skills/agent-git/SKILL.md`) instead of raw `git push` or human `gh` credentials.
+   - Always work on `agent/<persona>/<slug>` branches, label PRs `agent-authored`, never push directly to `main`/`master`, and respect `repo_policies` (`human-review` repos must be left open with `needs-human-review` for human approval).
 
 ## Verification & Applying Changes
 
