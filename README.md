@@ -45,10 +45,12 @@ Run the bootstrap script:
 bash ansible/bootstrap.sh
 ```
 
-Re-run specific roles later with tags:
+Re-run specific roles later with a single `sudo` auth (uses `pipelining = True` and a per-TTY keepalive so Touch ID only prompts once):
 
 ```bash
-ansible-playbook ansible/setup.yml --ask-become-pass --tags "homebrew,defaults,dotfiles"
+./dotfiles.sh ansible --tags "homebrew,defaults,dotfiles"
+# or via make:
+make apply TAGS="homebrew,defaults,dotfiles"
 ```
 
 ### Dotfiles Only (Without Full Ansible Run)
@@ -152,12 +154,14 @@ gh ssh-key add ~/.ssh/id_secretive_sign.pub --type signing --title "mac-sign (Se
 ## Commands & Verification
 
 ```bash
+./dotfiles.sh ansible      # Run Ansible playbook with single-auth sudo keepalive (forwards args)
 ./dotfiles.sh init-custom  # Scaffold a private overlay git repo in custom/
 ./dotfiles.sh apply        # Brew install + stow + manual/custom links + tmux plugins
 ./dotfiles.sh link         # Stow + manual/custom links + tmux plugins (skip brew)
 ./dotfiles.sh status       # Show link and overlay status
 ./dotfiles.sh diff         # Show differences between repo and home directory
 ./dotfiles.sh capture      # Copy app-managed files back into custom/
+make apply                 # Shortcut for ./dotfiles.sh ansible (supports TAGS="...")
 make verify                # Gitleaks, ShellCheck, ansible-lint, yamllint, tests
 ```
 

@@ -83,7 +83,7 @@ if ioreg -p IOUSB -l 2>/dev/null | grep -qi "YubiKey"; then
   fi
 fi
 
-ansible-playbook "${SCRIPT_DIR}/setup.yml" --ask-become-pass "$@"
+bash "${DOTFILES_DIR}/dotfiles.sh" ansible "$@"
 
 echo
 echo "==> Done. Log out and back in for all macOS defaults to take effect."

@@ -147,10 +147,10 @@
             echo "Opening OrbStack for first-time setup..."
             open -a OrbStack
             echo "Wait for OrbStack to finish setup, then re-run:"
-            echo "  ansible-playbook {{ playbook_dir }}/setup.yml --ask-become-pass --tags defaults"
+            echo "  {{ dotfiles_dir }}/dotfiles.sh ansible --tags defaults"
           else
             echo "OrbStack CLI available. Applying OrbStack defaults..."
-            ansible-playbook {{ playbook_dir }}/setup.yml --ask-become-pass --tags defaults
+            "{{ dotfiles_dir }}/dotfiles.sh" ansible --tags defaults
           fi
           echo
 
@@ -180,7 +180,7 @@
               echo
             fi
             echo "After YubiKey registration, activate sudo via YubiKey:"
-            echo "  ansible-playbook {{ playbook_dir }}/setup.yml --ask-become-pass --tags yubikey"
+            echo "  {{ dotfiles_dir }}/dotfiles.sh ansible --tags yubikey"
             echo
           fi
 

@@ -5,7 +5,10 @@ SHELL := /bin/bash
 .SHELLFLAGS := -euo pipefail -c
 NU_DIR := nushell/Library/Application Support/nushell
 
-.PHONY: verify precommit test nu ansible-syntax ansible-lint
+.PHONY: apply verify precommit test nu ansible-syntax ansible-lint
+
+apply:
+	./dotfiles.sh ansible $(if $(TAGS),--tags "$(TAGS)",)
 
 verify: precommit test nu ansible-syntax ansible-lint
 	@echo "make verify: all checks passed"

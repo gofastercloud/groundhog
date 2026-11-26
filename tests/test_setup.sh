@@ -90,15 +90,19 @@ assert_manifest_entry "$BREWFILE" vscode asvetliakov.vscode-neovim
 assert_not_contains "$BREWFILE" 'brew "node"'
 assert_not_contains "$BREWFILE" '^mas '
 assert_no_manifest_entry "$BREWFILE" brew nvm
+assert_no_manifest_entry "$BREWFILE" brew zsh-completions
+assert_no_manifest_entry "$BREWFILE" brew zsh-fast-syntax-highlighting
 assert_no_manifest_entry "$BREWFILE" cask steam
 assert_no_manifest_entry "$BREWFILE" cask claude
 assert_no_manifest_entry "$BREWFILE" cask immurok/tap/immurok
 
-# Shell & terminal
+# Shell & terminal (lean fallback zsh + primary nushell)
 assert_contains "$ZSHRC" 'typeset -U path PATH'
 assert_contains "$ZSHRC" 'setopt HIST_IGNORE_SPACE'
 assert_contains "$ZSHRC" 'eval "$(mise activate zsh)"'
 assert_not_contains "$ZSHRC" 'nvm.sh'
+assert_not_contains "$ZSHRC" 'fzf-tab'
+assert_not_contains "$ZSHRC" 'zsh-fast-syntax-highlighting'
 assert_contains "$ROOT/zsh/.zprofile" 'path=("$HOME/.local/share/mise/shims" $path)'
 assert_contains "$ROOT/zsh/.zprofile" 'path=("$HOME/.local/bin" $path)'
 assert_not_contains "$ZSHRC" 'path=("$HOME/.local/bin" $path)'
@@ -106,9 +110,6 @@ assert_contains "$ZSHRC" "alias gs='git status -sb'"
 assert_contains "$ROOT/nushell/Library/Application Support/nushell/autoload/00-aliases.nu" 'alias dcu ='
 assert_contains "$ZSHRC" 'with-secrets()'
 assert_not_contains "$ZSHRC" 'source "$HOME/.secrets"'
-assert_contains "$ZSHRC" 'unsetopt EXTENDED_GLOB'
-assert_contains "$ZSHRC" 'ZSH_COMPDUMP="$HOME/.zcompdump"'
-assert_contains "$ZSHRC" 'zsh-completion-refresh()'
 assert_contains "$ROOT/zsh/.zprofile" 'com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh'
 assert_contains "$ROOT/nushell/Library/Application Support/nushell/env.nu" 'com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh'
 
@@ -133,6 +134,9 @@ assert_not_contains "$LAUNCHER_TEMPLATE" 'sesh connect main'
 assert_contains "$DOTFILES_SCRIPT" '[[ "$pkg" == "vscode" ]] && stow_flags+=(--no-folding)'
 assert_contains "$DOTFILES_SCRIPT" '[[ "$pkg" == "nushell" ]] && stow_flags+=(--no-folding)'
 assert_contains "$DOTFILES_SCRIPT" 'init-custom)'
+assert_contains "$DOTFILES_SCRIPT" 'ansible)'
+assert_not_contains "$DOTFILES_SCRIPT" 'fzf-tab'
+assert_contains "$ROOT/ansible.cfg" 'pipelining = True'
 assert_contains "$DOTFILES_SCRIPT" 'STOW_PACKAGES=(zsh git tmux nvim ghostty gh atuin bat btop lazygit vscode nushell)'
 git -C "$ROOT" check-ignore -q "custom/config.yml" || fail "custom/ overlay must be gitignored"
 git -C "$ROOT" check-ignore -q "vscode/Library/Application Support/Code/User/globalStorage/state.vscdb" || fail "VS Code storage must be gitignored"

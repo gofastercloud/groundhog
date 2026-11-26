@@ -15,8 +15,6 @@ brew "sesh"                         # tmux session manager
 brew "tmux"                         # Terminal multiplexer
 brew "vivid"                        # LS_COLORS generator (nushell ls)
 brew "zoxide"                       # Smarter cd command
-brew "zsh-completions"              # Additional completions for zsh
-brew "zsh-fast-syntax-highlighting" # Syntax highlighting for zsh
 
 # ── Modern CLI replacements ──────────────────────────────────────────
 brew "ast-grep"                     # AST-based structural code search and rewrite

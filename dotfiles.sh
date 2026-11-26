@@ -3,6 +3,7 @@
 # dotfiles.sh - Manage Groundhog dotfiles with GNU Stow and optional custom/ overlay
 #
 # Usage:
+#   ./dotfiles.sh ansible     - Run Ansible playbook with single-auth sudo keepalive
 #   ./dotfiles.sh apply       - Full setup: brew, stow, manual/custom symlinks, tmux plugins
 #   ./dotfiles.sh link        - Stow configs, manual/custom symlinks, tmux plugins (skip brew)
 #   ./dotfiles.sh status      - Show which configs are linked
@@ -21,8 +22,6 @@ BACKUP_DIR="$HOME/.backups"
 # Packages managed by stow (directory name -> target mapping)
 STOW_PACKAGES=(zsh git tmux nvim ghostty gh atuin bat btop lazygit vscode nushell)
 
-FZF_TAB_REPO="https://github.com/Aloxaf/fzf-tab"
-FZF_TAB_COMMIT="fac145167f7ec1861233c54de0c8900b09c650fe"
 TPM_REPO="https://github.com/tmux-plugins/tpm"
 TPM_COMMIT="99469c4a9b1ccf77fade25842dc7bafbc8ce9946"
 
@@ -43,9 +42,10 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 usage() {
-    echo "Usage: $0 {apply|link|status|diff|capture|brew|init-custom}"
+    echo "Usage: $0 {ansible|apply|link|status|diff|capture|brew|init-custom}"
     echo
     echo "Commands:"
+    echo "  ansible     - Run Ansible playbook with a single sudo auth (forwards extra args)"
     echo "  apply       - Full setup: brew packages, stow configs, manual/custom links, tmux plugins"
     echo "  link        - Stow configs, manual/custom links, tmux plugins (skip brew)"
     echo "  status      - Show which configs are currently linked"
@@ -185,6 +185,55 @@ cmd_capture() {
             echo -e "  ${YELLOW}○${NC} $target (not a plain file; skipped)"
         fi
     done
+}
+
+_ANSIBLE_SUDOERS_TMP="/etc/sudoers.d/99-groundhog-ansible"
+_ANSIBLE_KEEPALIVE_PID=""
+
+cleanup_ansible_sudo() {
+    [[ -n "${_ANSIBLE_KEEPALIVE_PID:-}" ]] && kill "$_ANSIBLE_KEEPALIVE_PID" 2>/dev/null || true
+    if [[ -f "$_ANSIBLE_SUDOERS_TMP" ]]; then
+        sudo -n rm -f "$_ANSIBLE_SUDOERS_TMP" 2>/dev/null || true
+    fi
+    sudo -k 2>/dev/null || true
+}
+
+cmd_ansible() {
+    if ! command -v ansible-playbook &>/dev/null; then
+        echo -e "${RED}Error: ansible-playbook is not installed.${NC}" >&2
+        echo -e "Run ${YELLOW}bash ansible/bootstrap.sh${NC} first." >&2
+        exit 1
+    fi
+
+    # Ansible's WorkerProcess calls os.setsid(), detaching each task from the
+    # terminal TTY so macOS's default per-TTY sudo cache misses on every task.
+    # Temporarily scope the sudo timestamp globally (never NOPASSWD) for the
+    # duration of this run, refresh every 30s, and clean up + sudo -k on exit.
+    trap cleanup_ansible_sudo EXIT INT TERM
+
+    echo -e "${BLUE}Preparing temporary session-scoped sudo for Ansible...${NC}"
+    sudo sh -c '
+        set -eu
+        tmp=$(mktemp /tmp/groundhog-sudoers.XXXXXX)
+        printf "Defaults timestamp_type=global\n" > "$tmp"
+        chmod 0440 "$tmp"
+        /usr/sbin/visudo -cf "$tmp" >/dev/null
+        chown root:wheel "$tmp"
+        mv "$tmp" "$1"
+    ' _ "$_ANSIBLE_SUDOERS_TMP"
+
+    # Stamp the global ticket so setsid-detached Ansible workers inherit it.
+    sudo -v
+
+    (
+        while true; do
+            sleep 30
+            sudo -n -v 2>/dev/null || exit 0
+        done
+    ) &
+    _ANSIBLE_KEEPALIVE_PID=$!
+
+    ansible-playbook "$DOTFILES_DIR/ansible/setup.yml" "$@"
 }
 
 cmd_init_custom() {
@@ -336,17 +385,7 @@ cmd_link() {
 
     echo
 
-    # Step 5: zsh plugins & completions dirs
-    echo -e "${BLUE}Setting up zsh plugins...${NC}\n"
-    mkdir -p "$HOME/.zsh/completions" "$HOME/.zsh/plugins"
-    echo -e "  Installing pinned fzf-tab..."
-    ensure_git_checkout "$FZF_TAB_REPO" "$HOME/.zsh/plugins/fzf-tab" "$FZF_TAB_COMMIT"
-    echo -e "  ${GREEN}✓${NC} fzf-tab @ ${FZF_TAB_COMMIT:0:12}"
-    rm -f "$HOME/.zcompdump"
-
-    echo
-
-    # Step 6: Tmux plugins
+    # Step 5: Tmux plugins
     echo -e "${BLUE}Setting up tmux plugins...${NC}\n"
     echo -e "  Installing pinned TPM..."
     ensure_git_checkout "$TPM_REPO" "$HOME/.tmux/plugins/tpm" "$TPM_COMMIT"
@@ -362,7 +401,7 @@ cmd_link() {
 
     echo
 
-    # Step 7: Bat cache (for themes)
+    # Step 6: Bat cache (for themes)
     echo -e "${BLUE}Rebuilding bat theme cache...${NC}"
     if command bat cache --build >/dev/null 2>&1; then
         echo -e "  ${GREEN}✓${NC} Done"
@@ -516,6 +555,7 @@ cmd_status() {
 
 # Main
 case "${1:-}" in
+    ansible)     shift; cmd_ansible "$@" ;;
     apply)       cmd_apply ;;
     link)        cmd_link ;;
     status)      cmd_status ;;
