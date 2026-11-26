@@ -1,0 +1,53 @@
+---
+# agent_git — Repo-scoped GitHub App broker & signing wrappers for agents (opt-in).
+# Templates ~/.config/groundhog/agent-git.json, installs ~/.local/bin/agent-git
+# and ~/.local/bin/agent-gh wrappers, and links skills/agent-git into enabled
+# agent skill directories.
+
+- name: Ensure Groundhog user config directory exists
+  ansible.builtin.file:
+    path: "{{ home_dir }}/.config/groundhog"
+    state: directory
+    mode: "0700"
+
+- name: Write agent-git broker configuration
+  ansible.builtin.template:
+    src: agent-git.json.j2
+    dest: "{{ home_dir }}/.config/groundhog/agent-git.json"
+    mode: "0600"
+
+- name: Ensure ~/.local/bin exists
+  ansible.builtin.file:
+    path: "{{ home_dir }}/.local/bin"
+    state: directory
+    mode: "0755"
+
+- name: Install agent-git and agent-gh CLI wrappers
+  ansible.builtin.template:
+    src: wrapper.sh.j2
+    dest: "{{ home_dir }}/.local/bin/agent-{{ item }}"
+    mode: "0755"
+  loop:
+    - git
+    - gh
+
+- name: Ensure user agent skills directories exist for agent-git skill
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ home_dir }}/.claude/skills"
+    - "{{ home_dir }}/.gemini/antigravity/skills"
+    - "{{ home_dir }}/.codex/skills"
+
+- name: Link agent-git skill into Claude, Antigravity, and Codex
+  ansible.builtin.file:
+    src: "{{ dotfiles_dir }}/skills/agent-git"
+    dest: "{{ item }}/agent-git"
+    state: link
+    force: true
+  loop:
+    - "{{ home_dir }}/.claude/skills"
+    - "{{ home_dir }}/.gemini/antigravity/skills"
+    - "{{ home_dir }}/.codex/skills"

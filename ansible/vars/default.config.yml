@@ -18,6 +18,7 @@ immurok_enabled: false
 claude_code_enabled: false
 antigravity_enabled: false
 codex_enabled: false
+agent_git_enabled: false
 
 # Extra Claude Code deny patterns merged alongside the hardened public defaults.
 claude_code_extra_deny: []
@@ -28,6 +29,18 @@ antigravity_trusted_workspaces:
 
 # Optional project directories pre-trusted in ~/.codex/config.toml when codex_enabled is true.
 codex_trusted_projects: []
+
+# Repo-scoped GitHub App broker & signing config when agent_git_enabled is true.
+# Override IDs, bot identity, and per-repo policies in custom/config.yml.
+agent_git_app_id: ""
+agent_git_installation_id: ""
+agent_git_bot_name: ""
+agent_git_bot_email: ""
+agent_git_signing_key: "~/.ssh/id_agent_sign.pub"
+agent_git_default_agent_name: "Groundhog Agent"
+agent_git_keychain_service: "groundhog-agent-git-app-key"
+agent_git_allowed_branch_prefix: "agent/"
+agent_git_repo_policies: {}
 
 # Minutes sudo caches credentials per TTY (macOS default 5). 1 = 60 seconds,
 # keeping rapid follow-up sudo commands smooth without long-lived elevation.

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Managed by Groundhog (ansible/roles/agent_git).
+set -euo pipefail
+exec "{{ dotfiles_dir }}/groundhog" agent-git "{{ item }}" "$@"

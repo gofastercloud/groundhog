@@ -181,6 +181,7 @@ assert_contains "$DEFAULT_VARS" 'immurok_enabled: false'
 assert_contains "$DEFAULT_VARS" 'claude_code_enabled: false'
 assert_contains "$DEFAULT_VARS" 'antigravity_enabled: false'
 assert_contains "$DEFAULT_VARS" 'codex_enabled: false'
+assert_contains "$DEFAULT_VARS" 'agent_git_enabled: false'
 CLAUDE_TEMPLATE="$ROOT/ansible/roles/claude_code/templates/baseline-settings.json.j2"
 assert_contains "$CLAUDE_TEMPLATE" '"allowUnsandboxedCommands": false'
 assert_contains "$CLAUDE_TEMPLATE" '"Bash(git push --force-with-lease:*)"'
@@ -199,6 +200,8 @@ assert_contains "$ROOT/nushell/Library/Application Support/nushell/autoload/orb.
 [[ -f "$ROOT/CHANGELOG.md" ]] || fail "missing CHANGELOG.md"
 [[ -f "$ROOT/skills/groundhog/SKILL.md" ]] || fail "missing skills/groundhog/SKILL.md"
 assert_contains "$ROOT/skills/groundhog/SKILL.md" 'name: groundhog'
+[[ -f "$ROOT/skills/agent-git/SKILL.md" ]] || fail "missing skills/agent-git/SKILL.md"
+assert_contains "$ROOT/skills/agent-git/SKILL.md" 'name: agent-git'
 [[ -f "$ROOT/docs/index.html" ]] || fail "missing docs/index.html"
 assert_contains "$ROOT/docs/index.html" 'sha384-GY5FqjttLCFRt/McQbyaVdCk2O1IQtOeX8Py6NfD89BIAsIyJFRl4UgSXrk2vXAk'
 assert_contains "$DEFAULT_VARS" 'docker.expose_ports_to_lan: "false"'

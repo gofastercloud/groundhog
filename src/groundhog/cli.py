@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from groundhog import __version__
+from groundhog.agent_git import cmd_agent_git
 from groundhog.config import GroundhogPaths
 from groundhog.helpers import merge_claude_settings_file, tmux_copy_last
 from groundhog.ops import (
@@ -78,6 +79,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_claude.add_argument("target", type=Path, help="Target settings.json path")
     p_claude.add_argument("baseline", type=Path, help="Rendered baseline JSON fragment path")
 
+    p_agent_git = sub.add_parser(
+        "agent-git",
+        help="Repo-scoped GitHub App broker and signing wrappers for autonomous agents",
+    )
+    p_agent_git.add_argument("agent_git_args", nargs=argparse.REMAINDER)
+
     return parser
 
 
@@ -86,12 +93,14 @@ def main(argv: list[str] | None = None, *, paths: GroundhogPaths | None = None) 
     parser = build_parser()
     resolved = paths or GroundhogPaths.default()
 
-    # Forward all flags verbatim to ansible-playbook (argparse treats leading
-    # `--tags` / `-v` as subparser flags even with REMAINDER).
+    # Forward all flags verbatim to ansible-playbook / agent-git (argparse treats
+    # leading `--tags` / `-v` as subparser flags even with REMAINDER).
     if raw_argv and raw_argv[0] in {"ansible", "check"}:
         extra = raw_argv[1:]
         if extra not in (["-h"], ["--help"]):
             return cmd_ansible(resolved, extra, check=(raw_argv[0] == "check"))
+    if raw_argv and raw_argv[0] == "agent-git":
+        return cmd_agent_git(resolved, raw_argv[1:])
 
     args = parser.parse_args(raw_argv)
 
