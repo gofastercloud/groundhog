@@ -194,6 +194,22 @@ const SCENES = {
       { type: 'out', cls: 't-ok', text: 'Ready! Run /spec <idea> → /next → offline agent-box TDD → reviewer → verified PR.' },
     ],
   },
+  adopt: {
+    caption: 'Adopt Groundhog safely on an existing Mac — backup manifest, secret check & 1-command rollback',
+    copy: `./groundhog adopt\n./groundhog adopt --apply\n./groundhog clean --restore`,
+    steps: [
+      { type: 'cmd', prompt: '~/groundhog main ❯ ', text: './groundhog adopt' },
+      { type: 'out', cls: 't-info', text: 'Groundhog Adopt — Dry-Run Audit (no files modified)' },
+      { type: 'out', cls: 't-text', text: '  Conflicting dotfiles to back up: 4 (~/.zshrc, ~/.gitconfig, ~/.ssh/config, ~/.tmux.conf)' },
+      { type: 'out', cls: 't-teal', text: '  Extra Homebrew/VS Code entries → custom/Brewfile: 19' },
+      { type: 'out', cls: 't-teal', text: '  Current Dock apps → custom/config.yml:            11' },
+      { type: 'out', cls: 't-peach', text: '  WARNING: ~/.zshrc:42 looks like a secret/token assignment (will NOT be copied)' },
+      { type: 'cmd', prompt: '~/groundhog main ❯ ', text: './groundhog adopt --apply' },
+      { type: 'out', cls: 't-ok', text: 'Snapshot saved to: ~/.backups/groundhog-adopt-20261127-130500 (manifest.json)' },
+      { type: 'out', cls: 't-ok', text: '  adopted: custom/Brewfile (+19), custom/config.yml (dock_apps: 11), custom/gitconfig, ~/.ssh/config.local' },
+      { type: 'out', cls: 't-muted', text: 'Roll back any time: ./groundhog clean --restore' },
+    ],
+  },
   pqc: {
     caption: 'Hardware-bound Secure Enclave auth + NIST ML-KEM-768 PQC handshake',
     copy: `ssh -vT git@github.com o+e>| rg 'kex:|Server accepts key|Hi '`,
