@@ -113,6 +113,7 @@
             <button class="term-tab" role="tab" aria-selected="false" data-scene="pqc">3. PQC SSH + Secretive</button>
             <button class="term-tab" role="tab" aria-selected="false" data-scene="install-app">4. Agent: Install App</button>
             <button class="term-tab" role="tab" aria-selected="false" data-scene="agency">5. Autonomous Agency</button>
+            <button class="term-tab" role="tab" aria-selected="false" data-scene="adopt">6. Adopt Existing Mac</button>
           </div>
           <div class="terminal-controls">
             <button id="speed-btn" class="ctrl-btn" title="Toggle playback speed">1x</button>
@@ -356,6 +357,12 @@
           <div class="card-icon">🤖</div>
           <h3><code>groundhog-agency</code></h3>
           <p>Vendor-agnostic autonomous dev harness for Claude Code, Antigravity, and Codex: <code>/spec</code> → <code>/next</code> → offline <code>agent-box</code> TDD → fresh-context reviewer → verified PRs, plus zero-flag <code>agency-install --ship</code>.</p>
+        </article>
+
+        <article class="bento-card accent-peach">
+          <div class="card-icon">🛟</div>
+          <h3>Safe <code>adopt</code> &amp; <code>clean</code></h3>
+          <p>Already on a daily-driver Mac? <code>./groundhog adopt --apply</code> snapshots conflicts with a rollback manifest, preserves your Dock &amp; Brew packages in <code>custom/</code>, never copies detected secrets, and reverses cleanly with <code>./groundhog clean --restore</code>.</p>
         </article>
 
         <article class="bento-card accent-mauve">
