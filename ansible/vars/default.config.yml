@@ -19,6 +19,7 @@ claude_code_enabled: false
 antigravity_enabled: false
 codex_enabled: false
 agent_git_enabled: false
+agency_enabled: false
 
 # Extra Claude Code deny patterns merged alongside the hardened public defaults.
 claude_code_extra_deny: []
@@ -36,11 +37,14 @@ agent_git_app_id: ""
 agent_git_installation_id: ""
 agent_git_bot_name: ""
 agent_git_bot_email: ""
-agent_git_signing_key: "~/.ssh/id_agent_sign.pub"
+agent_git_signing_key: "~/.config/groundhog/agent_sign_ed25519.pub"
 agent_git_default_agent_name: "Groundhog Agent"
 agent_git_keychain_service: "groundhog-agent-git-app-key"
 agent_git_allowed_branch_prefix: "agent/"
 agent_git_repo_policies: {}
+
+# Local checkout path of groundhog-agency when agency_enabled is true.
+agency_repo_dir: ""
 
 # Minutes sudo caches credentials per TTY (macOS default 5). 1 = 60 seconds,
 # keeping rapid follow-up sudo commands smooth without long-lived elevation.

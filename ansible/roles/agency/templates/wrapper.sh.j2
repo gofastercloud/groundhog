@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Managed by Groundhog (ansible/roles/agency) — do not edit directly.
+set -euo pipefail
+{% if item.extra %}
+exec python3 -I "{{ item.script }}" {{ item.extra }} "$@"
+{% else %}
+exec python3 -I "{{ item.script }}" "$@"
+{% endif %}

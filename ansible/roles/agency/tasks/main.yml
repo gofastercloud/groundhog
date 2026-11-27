@@ -1,0 +1,62 @@
+---
+# agency — Vendor-agnostic autonomous software-agency harness integration (opt-in).
+# Links canonical groundhog-agency skills (spec, next, handoff) into Claude Code,
+# Antigravity, and Codex, and installs ~/.local/bin/agency-{install,dash,report}.
+
+- name: Check that agency_repo_dir is configured and present
+  ansible.builtin.stat:
+    path: "{{ agency_repo_dir }}/install.py"
+  register: agency_repo_stat
+  when: agency_repo_dir | default('') | length > 0
+
+- name: Assert groundhog-agency checkout exists when agency_enabled is true
+  ansible.builtin.assert:
+    that:
+      - agency_repo_dir | default('') | length > 0
+      - agency_repo_stat.stat.exists | default(false)
+    fail_msg: >-
+      agency_enabled is true, but agency_repo_dir ('{{ agency_repo_dir }}') does not
+      contain install.py. Clone groundhog-agency and set agency_repo_dir in custom/config.yml.
+
+- name: Ensure ~/.local/bin exists for agency wrappers
+  ansible.builtin.file:
+    path: "{{ home_dir }}/.local/bin"
+    state: directory
+    mode: "0755"
+
+- name: Install agency CLI wrappers into ~/.local/bin
+  ansible.builtin.template:
+    src: wrapper.sh.j2
+    dest: "{{ home_dir }}/.local/bin/{{ item.name }}"
+    mode: "0755"
+  loop:
+    - {name: agency-install, script: "{{ agency_repo_dir }}/install.py", extra: ""}
+    - {name: agency-dash, script: "{{ agency_repo_dir }}/harness/.claude/hooks/dash.py", extra: ""}
+    - {name: agency-report, script: "{{ agency_repo_dir }}/harness/.claude/hooks/gtq.py", extra: "report"}
+
+- name: Ensure user agent skills directories exist for groundhog-agency skills
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ home_dir }}/.claude/skills"
+    - "{{ home_dir }}/.gemini/antigravity/skills"
+    - "{{ home_dir }}/.codex/skills"
+
+- name: Link canonical agency skills into Claude, Antigravity, and Codex
+  ansible.builtin.file:
+    src: "{{ agency_repo_dir }}/harness/core/skills/{{ item[1] }}"
+    dest: "{{ item[0] }}/agency-{{ item[1] }}"
+    state: link
+    force: true
+  loop: "{{ agency_skill_dirs | product(agency_skill_names) | list }}"
+  vars:
+    agency_skill_dirs:
+      - "{{ home_dir }}/.claude/skills"
+      - "{{ home_dir }}/.gemini/antigravity/skills"
+      - "{{ home_dir }}/.codex/skills"
+    agency_skill_names:
+      - spec
+      - next
+      - handoff

@@ -182,6 +182,8 @@ assert_contains "$DEFAULT_VARS" 'claude_code_enabled: false'
 assert_contains "$DEFAULT_VARS" 'antigravity_enabled: false'
 assert_contains "$DEFAULT_VARS" 'codex_enabled: false'
 assert_contains "$DEFAULT_VARS" 'agent_git_enabled: false'
+assert_contains "$DEFAULT_VARS" 'agency_enabled: false'
+[[ -f "$ROOT/ansible/roles/agency/tasks/main.yml" ]] || fail "missing ansible/roles/agency/tasks/main.yml"
 CLAUDE_TEMPLATE="$ROOT/ansible/roles/claude_code/templates/baseline-settings.json.j2"
 assert_contains "$CLAUDE_TEMPLATE" '"allowUnsandboxedCommands": false'
 assert_contains "$CLAUDE_TEMPLATE" '"Bash(git push --force-with-lease:*)"'
