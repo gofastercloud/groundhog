@@ -33,6 +33,7 @@
     - {name: agency-install, script: "{{ agency_repo_dir }}/install.py", extra: ""}
     - {name: agency-dash, script: "{{ agency_repo_dir }}/harness/.claude/hooks/dash.py", extra: ""}
     - {name: agency-report, script: "{{ agency_repo_dir }}/harness/.claude/hooks/gtq.py", extra: "report"}
+    - {name: agency-kb, script: "{{ agency_repo_dir }}/harness/.claude/hooks/kb.py", extra: ""}
 
 - name: Ensure user agent skills directories exist for groundhog-agency skills
   ansible.builtin.file:
@@ -60,4 +61,5 @@
       - spec
       - next
       - next-all
+      - retro
       - handoff
