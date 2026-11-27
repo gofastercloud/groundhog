@@ -151,7 +151,7 @@ macOS deliberately stops scripts from granting privacy permissions, creating Sec
 - **Editors & runtimes**: Neovim (`lazy.nvim`), VS Code (`settings.json`, `keybindings.json`, 24 extensions, and `duti` code/text file associations), `uv` for Python (7-day `exclude-newer` cooldown, `pip` blocked outside virtualenvs), `mise` for Node (7-day `minimum_release_age` cooldown), `npm` (`ignore-scripts=true` + 7-day `min-release-age`), `ruff`, `ty`, `pyright`, `go`, and `bun`.
 - **Desktop app defaults**: OrbStack (`docker.expose_ports_to_lan=false`, `machines.expose_ports_to_lan=false`, `ssh.expose_port=false`), Shottr (`Cmd+Shift+3/4/5` + OCR, telemetry off), and BetterDisplay (portable DDC shortcut, Sparkle profile info off).
 - **Security**: PQC-first SSH (`mlkem768x25519-sha256`), AEAD-only ciphers, ETM-only MACs, Secretive agent integration, macOS Application Firewall + Stealth Mode, AirPlay Receiver and AirDrop discoverability off, 60-second `sudo` cache, global Git `init.templateDir` Gitleaks hook, and local pre-commit/pre-push secret scanning.
-- **Autonomous agent stack**: hardened baselines for Claude Code, Antigravity, and Codex; repo-scoped 1-hour GitHub App broker (`agent-git` / `agent-gh`) with dedicated signing-only SSH keys; pre-baked offline `groundhog-agent-box` containers (`agent-box -- make verify`, auto-starting OrbStack); and opt-in [`groundhog-agency`](https://github.com/gofastercloud/groundhog-agency) integration (`/spec`, `/next`, `/handoff`, `agency-install --ship`, `agency-dash`). See [AGENTIC.md](AGENTIC.md).
+- **Autonomous agent stack**: hardened baselines for Claude Code, Antigravity, and Codex; repo-scoped 1-hour GitHub App broker (`agent-git` / `agent-gh`) with dedicated signing-only SSH keys; pre-baked offline `groundhog-agent-box` containers (`agent-box -- make verify`, auto-starting OrbStack); and opt-in [`groundhog-agency`](https://github.com/gofastercloud/groundhog-agency) integration (`/spec`, `/next`, `/next-all`, `/retro`, `/handoff`, `agency-install --ship`, `agency-dash`, factory metrics, and a cross-project BM25 knowledge base synced via `custom/agency-kb/`). See [AGENTIC.md](AGENTIC.md).
 
 ### Optional feature flags
 
@@ -165,7 +165,7 @@ Off by default in `ansible/vars/default.config.yml`; turn on what you use in `cu
 | `antigravity_enabled` | `false` | Templates `~/.gemini/antigravity-cli/settings.json` with `trustedWorkspaces` |
 | `codex_enabled` | `false` | Scaffolds hardened `~/.codex/config.toml` (`workspace-write` sandbox, `network_access = false`, `core` env filtering) and links the Groundhog skill |
 | `agent_git_enabled` | `false` | Configures `~/.config/groundhog/agent-git.json`, installs `agent-git`/`agent-gh` 1-hour single-repo GitHub App wrappers, and links `skills/agent-git` |
-| `agency_enabled` | `false` | Links vendor-agnostic `groundhog-agency` skills (`spec`, `next`, `handoff`) into Claude Code, Antigravity, and Codex, and installs `agency-{install,dash,report}` wrappers |
+| `agency_enabled` | `false` | Links vendor-agnostic `groundhog-agency` skills (`spec`, `next`, `next-all`, `retro`, `handoff`) into Claude Code, Antigravity, and Codex, installs `agency-{install,dash,report,kb}` wrappers, and symlinks `~/.agency-kb` into `custom/agency-kb/` |
 | `yubikey_enabled` | `false` | Enables the `yubikey` role and `pam_u2f` sudo auth (once `~/.config/Yubico/u2f_keys` exists) |
 | `immurok_enabled` | `false` | Enables the `immurok` role (keeps its SSH agent and Quick Fill off) and `pam_immurok` sudo auth |
 
