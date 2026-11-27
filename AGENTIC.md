@@ -13,6 +13,8 @@ claude_code_enabled: true
 antigravity_enabled: true
 codex_enabled: true
 agent_git_enabled: true
+agency_enabled: true
+agency_repo_dir: "{{ home_dir }}/Code/projects/groundhog-agency"
 
 # Optional: block extra private directories in Claude Code
 claude_code_extra_deny:
@@ -67,20 +69,41 @@ gwt rm feat/auth-refresh
 
 If a repo has a `.worktreeinclude` file (one relative path per line, such as local non-secret config files), `gwt add` copies those into the fresh worktree automatically.
 
-## 4. Isolate untrusted repos with `agent-box`
+## 4. Isolate untrusted repos and test runs with `agent-box`
 
-When you want to poke at an unfamiliar repository, test an autonomous loop, or run untrusted install scripts, drop into `agent-box` (`autoload/orb.nu`). It launches a disposable OrbStack container (`--rm`) with:
-- **Only** your current working directory mounted at `/workspace` (zero `~/.ssh`, `~/.aws`, or host `$HOME` visibility)
-- `--cap-drop=ALL` and `--security-opt=no-new-privileges:true`
+When you want to poke at an unfamiliar repository, test an autonomous loop, or run untrusted install/test scripts, use `agent-box` (`~/.local/bin/agent-box` / `autoload/orb.nu`). It auto-starts OrbStack if stopped, auto-builds Groundhog's lightweight non-root `groundhog-agent-box:latest` image (Python 3.13, `uv` with 7-day cooldown, `ruff`, `pytest`, `git`, `ripgrep`, `make`), and launches a disposable container (`--rm`) with:
+- **Only** your target directory mounted at `/workspace` (zero `~/.ssh`, `~/.aws`, `~/.config/groundhog`, or host `$HOME` visibility)
+- `--read-only` root filesystem, `--cap-drop=ALL`, `--security-opt=no-new-privileges:true`, `--pids-limit 256`
 - **Network disabled by default** (`--network=none`; pass `--net` only when outbound access is actually required)
 
 ```nu
-# Offline disposable sandbox on the current directory
+# Offline interactive sandbox on the current directory
 agent-box
 
-# Same, with outbound network and a Python image
-agent-box --net --image python:3.14-slim
+# Run tests/verify offline in a worktree (default in groundhog-agency)
+agent-box -- make verify
+agent-box --dir ../wt -- uv run pytest -q
+
+# Rebuild the local groundhog-agent-box image
+agent-box --build
+
+# Custom image with outbound network
+agent-box --net --image python:3.13-slim
 ```
+
+## 5. Vendor-agnostic autonomous agency (`groundhog-agency`)
+
+Enable `agency_enabled: true` and `agent_git_enabled: true` to link the canonical `/spec`, `/next`, and `/handoff` skills into Claude Code, Antigravity, and Codex and install `agency-install`, `agency-dash`, and `agency-report`:
+
+```nu
+# One-command repo onboarding (files, CODEOWNERS, labels, signed-commit ruleset, setup PR)
+agency-install /path/to/repo --ship
+
+# Launch orchestrator + live tmux dashboard
+agency-dash up --vendor claude   # or --vendor codex
+```
+
+Implementers and reviewers run verification inside offline `agent-box` by default, sign commits via `agent-git` (dedicated signing-only key in `~/.config/groundhog/`), and ship PRs via `agent-gh` respecting each repo's `autonomous` vs `human-review` policy.
 
 ## 5. Autonomous GitHub workflow (`agent-git` & `agent-gh`)
 

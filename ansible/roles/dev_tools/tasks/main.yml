@@ -112,6 +112,13 @@
     mode: "0755"
     src: ghostty-tmux.j2
 
+- name: Link hardened agent-box CLI into ~/.local/bin
+  ansible.builtin.file:
+    src: "{{ dotfiles_dir }}/scripts/agent-box.sh"
+    dest: "{{ home_dir }}/.local/bin/agent-box"
+    state: link
+    force: true
+
 # Clean up legacy NVM links left behind from before the mise migration.
 - name: Check for legacy NVM tool symlinks in ~/.local/bin
   ansible.builtin.stat:

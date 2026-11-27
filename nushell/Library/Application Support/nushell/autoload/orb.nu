@@ -55,24 +55,15 @@ def dprune [--volumes] {
   }
 }
 
-# Spin up a disposable, isolated container sandbox mounting ONLY the current
+# Spin up a disposable, isolated container sandbox mounting ONLY the target
 # directory at /workspace (zero ~/.ssh, ~/.aws, ~/.config/private, or host env).
+# Auto-starts OrbStack if stopped and auto-builds groundhog-agent-box:latest.
 # Network is disabled by default; pass --net only when outbound access is needed.
-#   agent-box                          offline Debian shell on $PWD
-#   agent-box --net                    same, with outbound network enabled
-#   agent-box --image python:3.14-slim custom image
-def agent-box [--net, --image: string = "debian:trixie-slim"] {
-  let cwd = ($env.PWD | path expand)
-  let net_flag = if $net { "bridge" } else { "none" }
-  print $"Starting isolated agent-box ($image) [network=($net_flag), mount=($cwd):/workspace]"
-  (
-    ^docker run --rm -it --init
-      --network $net_flag
-      --cap-drop=ALL
-      --security-opt=no-new-privileges:true
-      -v $"($cwd):/workspace"
-      -w /workspace
-      $image
-      sh -c 'command -v bash >/dev/null && exec bash || exec sh'
-  )
+#   agent-box                                   offline groundhog-agent-box shell on $PWD
+#   agent-box -- make verify                    run a command offline inside the sandbox
+#   agent-box --net --image python:3.13-slim    custom image with outbound network
+#   agent-box --build                           rebuild groundhog-agent-box:latest
+def --wrapped agent-box [...args: string] {
+  let bin = (which agent-box | where type == external | get -o 0.path | default ($env.HOME | path join ".local/bin/agent-box"))
+  ^$bin ...$args
 }

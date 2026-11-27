@@ -88,7 +88,7 @@
         <span class="pill pill-lavender">Secretive Secure Enclave</span>
         <span class="pill pill-mauve">Single-Auth Sudo Helper</span>
         <span class="pill pill-peach">gwt + sesh + agent-box</span>
-        <span class="pill pill-green">Zero MAS Sign-in Friction</span>
+        <span class="pill pill-green">agent-git + groundhog-agency</span>
       </div>
     </section>
 
@@ -112,6 +112,7 @@
             <button class="term-tab" role="tab" aria-selected="false" data-scene="agentic">2. Parallel Agents</button>
             <button class="term-tab" role="tab" aria-selected="false" data-scene="pqc">3. PQC SSH + Secretive</button>
             <button class="term-tab" role="tab" aria-selected="false" data-scene="install-app">4. Agent: Install App</button>
+            <button class="term-tab" role="tab" aria-selected="false" data-scene="agency">5. Autonomous Agency</button>
           </div>
           <div class="terminal-controls">
             <button id="speed-btn" class="ctrl-btn" title="Toggle playback speed">1x</button>
@@ -257,6 +258,33 @@
 
           <label class="toggle-row">
             <div>
+              <strong>Codex CLI Baseline</strong>
+              <span><code>codex_enabled</code> — Hardened <code>workspace-write</code> sandbox, network off, core env filtering</span>
+            </div>
+            <input type="checkbox" class="flag-toggle" data-flag="codex_enabled">
+            <span class="switch"></span>
+          </label>
+
+          <label class="toggle-row">
+            <div>
+              <strong>Scoped GitHub App Broker</strong>
+              <span><code>agent_git_enabled</code> — 1-hour single-repo <code>agent-git</code>/<code>agent-gh</code> tokens &amp; signing-only SSH key</span>
+            </div>
+            <input type="checkbox" class="flag-toggle" data-flag="agent_git_enabled" checked>
+            <span class="switch"></span>
+          </label>
+
+          <label class="toggle-row">
+            <div>
+              <strong>Groundhog Agency Harness</strong>
+              <span><code>agency_enabled</code> — Vendor-agnostic <code>/spec</code>, <code>/next</code>, <code>/handoff</code> skills &amp; live tmux dashboard</span>
+            </div>
+            <input type="checkbox" class="flag-toggle" data-flag="agency_enabled" checked>
+            <span class="switch"></span>
+          </label>
+
+          <label class="toggle-row">
+            <div>
               <strong>Inbound PQC SSH &amp; Mosh</strong>
               <span><code>remote_login_enabled</code> — Deploys <code>050-hardening.conf</code> ahead of macOS defaults</span>
             </div>
@@ -314,8 +342,20 @@
 
         <article class="bento-card accent-lavender">
           <div class="card-icon">📦</div>
-          <h3>Disposable <code>agent-box</code></h3>
-          <p>Drop into an offline OrbStack container mounting <em>only</em> <code>$PWD:/workspace</code> with <code>--cap-drop=ALL</code> and <code>no-new-privileges</code> — zero host <code>~/.ssh</code>, <code>~/.aws</code>, or env leakage.</p>
+          <h3>Hardened <code>agent-box</code></h3>
+          <p>Pre-baked non-root <code>groundhog-agent-box</code> image (Python, <code>uv</code>, <code>ruff</code>, <code>pytest</code>) that auto-starts OrbStack and mounts <em>only</em> <code>$PWD:/workspace</code> with <code>--network=none</code>, <code>--read-only</code>, and <code>--cap-drop=ALL</code>.</p>
+        </article>
+
+        <article class="bento-card accent-green">
+          <div class="card-icon">🔑</div>
+          <h3><code>agent-git</code> &amp; <code>agent-gh</code></h3>
+          <p>1-hour single-repo GitHub App tokens + a dedicated signing-only SSH key outside <code>~/.ssh</code> give agents Verified commits on <code>agent/*</code> branches with per-repo <code>autonomous</code> vs <code>human-review</code> rulesets — never touching Secretive.</p>
+        </article>
+
+        <article class="bento-card accent-sky">
+          <div class="card-icon">🤖</div>
+          <h3><code>groundhog-agency</code></h3>
+          <p>Vendor-agnostic autonomous dev harness for Claude Code, Antigravity, and Codex: <code>/spec</code> → <code>/next</code> → offline <code>agent-box</code> TDD → fresh-context reviewer → verified PRs, plus zero-flag <code>agency-install --ship</code>.</p>
         </article>
 
         <article class="bento-card accent-mauve">
