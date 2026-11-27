@@ -191,7 +191,9 @@ const SCENES = {
       { type: 'out', cls: 't-ok', text: 'created ruleset main-autonomous (PR required, required_signatures, no force-push)' },
       { type: 'out', cls: 't-peach', text: 'merged harness PR: gofastercloud/app#21 (Signed & Verified by gofastercloud-agent[bot])' },
       { type: 'cmd', prompt: '~/Code/app main ❯ ', text: 'agency-dash up --vendor claude' },
-      { type: 'out', cls: 't-ok', text: 'Ready! Run /spec <idea> → /next → offline agent-box TDD → reviewer → verified PR.' },
+      { type: 'out', cls: 't-ok', text: 'Ready! Run /spec <idea> → /next-all → offline agent-box TDD → reviewer → /retro (~/.agency-kb).' },
+      { type: 'cmd', prompt: '~/Code/app main ❯ ', text: 'agency-kb search "ffmpeg audio" --top 3' },
+      { type: 'out', cls: 't-teal', text: '[pitfall] ffmpeg sidechain ducking filter ordering (demo-builder)  (score 4.82)' },
     ],
   },
   adopt: {

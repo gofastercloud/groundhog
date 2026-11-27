@@ -93,17 +93,21 @@ agent-box --net --image python:3.13-slim
 
 ## 5. Vendor-agnostic autonomous agency (`groundhog-agency`)
 
-Enable `agency_enabled: true` and `agent_git_enabled: true` to link the canonical `/spec`, `/next`, and `/handoff` skills into Claude Code, Antigravity, and Codex and install `agency-install`, `agency-dash`, and `agency-report`:
+Enable `agency_enabled: true` and `agent_git_enabled: true` to link the canonical `/spec`, `/next`, `/next-all`, `/retro`, and `/handoff` skills into Claude Code, Antigravity, and Codex, install `agency-{install,dash,report,kb}`, and back your cross-project BM25 knowledge base (`~/.agency-kb`) in `custom/agency-kb/` for cross-Mac sync:
 
 ```nu
-# One-command repo onboarding (files, CODEOWNERS, labels, signed-commit ruleset, setup PR)
+# One-command repo onboarding (files, readiness pre-flight, CODEOWNERS, labels, signed ruleset, setup PR)
 agency-install /path/to/repo --ship
 
 # Launch orchestrator + live tmux dashboard
 agency-dash up --vendor claude   # or --vendor codex
+
+# Search your cross-project second brain & check first-pass reviewer metrics
+agency-kb search "ffmpeg audio" --top 5
+python3 .claude/hooks/gtq.py metrics
 ```
 
-Implementers and reviewers run verification inside offline `agent-box` by default, sign commits via `agent-git` (dedicated signing-only key in `~/.config/groundhog/`), and ship PRs via `agent-gh` respecting each repo's `autonomous` vs `human-review` policy.
+Implementers and reviewers run verification inside offline `agent-box` by default, sign commits via `agent-git` (dedicated signing-only key in `~/.config/groundhog/`), ship PRs via `agent-gh` respecting each repo's `autonomous` vs `human-review` policy, and distil build learnings into `custom/agency-kb/` via `/retro`. (`groundhog-agency` also works standalone without Groundhog — see its [USAGE.md](https://github.com/gofastercloud/groundhog-agency/blob/main/USAGE.md).)
 
 ## 5. Autonomous GitHub workflow (`agent-git` & `agent-gh`)
 
