@@ -173,11 +173,25 @@ const SCENES = {
       { type: 'out', cls: 't-text',  text: '│ 0 │ ~/Code/app                    │ main              │ a1b2c3d │' },
       { type: 'out', cls: 't-ok',    text: '│ 1 │ ~/Code/app-feat-auth-refresh  │ feat/auth-refresh │ a1b2c3d │' },
       { type: 'out', cls: 't-muted', text: '╰───┴───────────────────────────────┴───────────────────┴─────────╯' },
-      { type: 'cmd', prompt: '~/Code/app-feat-auth-refresh ❯ ', text: 'agent-box --image python:3.14-slim' },
-      { type: 'out', cls: 't-teal', text: 'Starting isolated agent-box python:3.14-slim [network=none, mount=$PWD:/workspace]' },
-      { type: 'out', cls: 't-ok', text: '✓ --cap-drop=ALL  ✓ no-new-privileges  ✓ zero ~/.ssh / ~/.aws / host env' },
-      { type: 'cmd', prompt: 'sandbox:/workspace $ ', text: 'ls ~/.ssh ~/.aws 2>&1 || true' },
-      { type: 'out', cls: 't-peach', text: 'ls: cannot access \'/root/.ssh\': No such file or directory' },
+      { type: 'cmd', prompt: '~/Code/app-feat-auth-refresh ❯ ', text: 'agent-box -- make verify' },
+      { type: 'out', cls: 't-teal', text: 'agent-box: groundhog-agent-box:latest [network=none, --read-only, mount=$PWD:/workspace]' },
+      { type: 'out', cls: 't-ok', text: '✓ --cap-drop=ALL  ✓ non-root agent  ✓ zero ~/.ssh / ~/.aws / host env' },
+      { type: 'out', cls: 't-ok', text: 'All checks passed! 42 passed in 0.8s' },
+    ],
+  },
+  agency: {
+    caption: 'Zero-flag groundhog-agency onboarding + autonomous verified PRs across Claude, Antigravity & Codex',
+    copy: `agency-install ~/Code/app --ship\nagency-dash up --vendor claude`,
+    steps: [
+      { type: 'cmd', prompt: '~/Code/app main ❯ ', text: 'agency-install ~/Code/app --ship' },
+      { type: 'out', cls: 't-info', text: 'wrote: .agents/{orchestrator,roles,skills}, .claude/{agents,hooks,settings.json}, AGENTS.md, CODEOWNERS' },
+      { type: 'out', cls: 't-teal', text: 'repo: gofastercloud/app (policy: autonomous)' },
+      { type: 'out', cls: 't-ok', text: 'ok: agent-gh verified access to gofastercloud/app' },
+      { type: 'out', cls: 't-ok', text: 'created labels: agent-authored, ready-for-agent, in-progress, needs-human, spec' },
+      { type: 'out', cls: 't-ok', text: 'created ruleset main-autonomous (PR required, required_signatures, no force-push)' },
+      { type: 'out', cls: 't-peach', text: 'merged harness PR: gofastercloud/app#21 (Signed & Verified by gofastercloud-agent[bot])' },
+      { type: 'cmd', prompt: '~/Code/app main ❯ ', text: 'agency-dash up --vendor claude' },
+      { type: 'out', cls: 't-ok', text: 'Ready! Run /spec <idea> → /next → offline agent-box TDD → reviewer → verified PR.' },
     ],
   },
   pqc: {
@@ -372,6 +386,9 @@ function updateYamlPreview() {
     '',
     `claude_code_enabled: ${flags.claude_code_enabled}`,
     `antigravity_enabled: ${flags.antigravity_enabled}`,
+    `codex_enabled: ${flags.codex_enabled}`,
+    `agent_git_enabled: ${flags.agent_git_enabled}`,
+    `agency_enabled: ${flags.agency_enabled}`,
     `remote_login_enabled: ${flags.remote_login_enabled}`,
   ];
   if (flags.remote_login_enabled) {
@@ -381,6 +398,22 @@ function updateYamlPreview() {
     `yubikey_enabled: ${flags.yubikey_enabled}`,
     `immurok_enabled: ${flags.immurok_enabled}`,
   );
+
+  if (flags.agent_git_enabled) {
+    lines.push(
+      '',
+      '# Per-repo merge policies (default: autonomous):',
+      'agent_git_repo_policies:',
+      '  your-org/sensitive-repo: human-review',
+    );
+  }
+
+  if (flags.agency_enabled) {
+    lines.push(
+      '',
+      'agency_repo_dir: "{{ home_dir }}/Code/projects/groundhog-agency"',
+    );
+  }
 
   if (flags.claude_code_enabled) {
     lines.push(

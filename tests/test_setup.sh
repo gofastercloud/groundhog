@@ -197,7 +197,7 @@ assert_contains "$CODEX_TEMPLATE" 'network_access = false'
 assert_contains "$CODEX_TEMPLATE" 'inherit = "core"'
 assert_contains "$CODEX_TEMPLATE" 'ignore_default_excludes = false'
 assert_contains "$ROOT/nushell/Library/Application Support/nushell/autoload/git.nu" '.worktreeinclude'
-assert_contains "$ROOT/nushell/Library/Application Support/nushell/autoload/orb.nu" 'def agent-box'
+assert_contains "$ROOT/nushell/Library/Application Support/nushell/autoload/orb.nu" 'def --wrapped agent-box'
 [[ -f "$ROOT/AGENTIC.md" ]] || fail "missing AGENTIC.md"
 [[ -f "$ROOT/CHANGELOG.md" ]] || fail "missing CHANGELOG.md"
 [[ -f "$ROOT/skills/groundhog/SKILL.md" ]] || fail "missing skills/groundhog/SKILL.md"
@@ -273,10 +273,13 @@ done < <(grep -Eo '^[a-z0-9_]+_enabled:' "$DEFAULT_VARS" | tr -d ':')
 
 # Shell syntax checks
 [[ -x "$ROOT/scripts/vm_test.sh" ]] || fail "scripts/vm_test.sh must be executable"
+[[ -x "$ROOT/scripts/agent-box.sh" ]] || fail "scripts/agent-box.sh must be executable"
+[[ -f "$ROOT/scripts/agent-box/Dockerfile" ]] || fail "missing scripts/agent-box/Dockerfile"
 bash -n "$GROUNDHOG_BIN"
 bash -n "$DOTFILES_SHIM"
 bash -n "$ROOT/ansible/bootstrap.sh"
 bash -n "$ROOT/scripts/vm_test.sh"
+bash -n "$ROOT/scripts/agent-box.sh"
 bash -n "$ROOT/git/.config/git/template/hooks/pre-commit"
 zsh -n "$ZSHRC"
 zsh -n "$ROOT/zsh/.zprofile"
