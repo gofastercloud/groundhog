@@ -63,3 +63,30 @@
       - next-all
       - retro
       - handoff
+
+- name: Check if private custom/ overlay exists for agency knowledge base
+  ansible.builtin.stat:
+    path: "{{ dotfiles_dir }}/custom"
+  register: agency_custom_dir
+
+- name: Check existing ~/.agency-kb state before linking
+  ansible.builtin.stat:
+    path: "{{ home_dir }}/.agency-kb"
+  register: agency_kb_existing
+
+- name: Ensure custom/agency-kb directory exists in private overlay
+  ansible.builtin.file:
+    path: "{{ dotfiles_dir }}/custom/agency-kb"
+    state: directory
+    mode: "0700"
+  when: agency_custom_dir.stat.isdir | default(false)
+
+- name: Link ~/.agency-kb into private custom/ overlay for cross-Mac sync
+  ansible.builtin.file:
+    src: "{{ dotfiles_dir }}/custom/agency-kb"
+    dest: "{{ home_dir }}/.agency-kb"
+    state: link
+    force: true
+  when:
+    - agency_custom_dir.stat.isdir | default(false)
+    - not (agency_kb_existing.stat.exists | default(false) and not (agency_kb_existing.stat.islnk | default(false)))
