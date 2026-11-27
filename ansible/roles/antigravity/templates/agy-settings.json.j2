@@ -1,3 +1,8 @@
 {
-  "trustedWorkspaces": {{ antigravity_trusted_workspaces | to_nice_json }}
+{% if antigravity_permission_allow | default([]) | length > 0 %}
+  "permissions": {
+    "allow": {{ antigravity_permission_allow | to_nice_json | indent(4) }}
+  },
+{% endif %}
+  "trustedWorkspaces": {{ antigravity_trusted_workspaces | to_nice_json | indent(2) }}
 }
