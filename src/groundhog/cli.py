@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from groundhog import __version__
+from groundhog.adopt import cmd_adopt, cmd_clean
 from groundhog.agent_git import cmd_agent_git
 from groundhog.config import GroundhogPaths
 from groundhog.helpers import merge_claude_settings_file, tmux_copy_last
@@ -65,6 +66,35 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("brew", help="Install Homebrew packages from core, custom, and local Brewfiles")
     sub.add_parser("init-custom", help="Scaffold a private overlay git repo in custom/")
     sub.add_parser("verify-custom", help="Validate custom/ YAML, manifests, SSH keys, and hooks")
+
+    p_adopt = sub.add_parser(
+        "adopt",
+        help="Audit an existing Mac and safely snapshot + adopt configs into custom/ and *.local",
+    )
+    p_adopt.add_argument(
+        "--apply",
+        action="store_true",
+        help="Write timestamped backup manifest and populate custom/ + *.local (default: dry-run)",
+    )
+    p_adopt.add_argument(
+        "--json", action="store_true", dest="as_json", help="Emit structured JSON report"
+    )
+
+    p_clean = sub.add_parser(
+        "clean",
+        help="Unstow Groundhog links/wrappers and optionally restore a pre-adoption backup",
+    )
+    p_clean.add_argument(
+        "--restore",
+        nargs="?",
+        const="__LATEST__",
+        default=None,
+        metavar="BACKUP_DIR",
+        help="Restore backed-up dotfiles (defaults to latest ~/.backups/groundhog-adopt-*)",
+    )
+    p_clean.add_argument(
+        "--dry-run", action="store_true", help="Preview removals/restores without changes"
+    )
 
     p_tmux = sub.add_parser(
         "tmux-copy-last",
@@ -139,6 +169,15 @@ def main(argv: list[str] | None = None, *, paths: GroundhogPaths | None = None) 
         return cmd_init_custom(resolved)
     if args.command == "verify-custom":
         return cmd_verify_custom(resolved)
+    if args.command == "adopt":
+        return cmd_adopt(resolved, apply=args.apply, as_json=args.as_json)
+    if args.command == "clean":
+        return cmd_clean(
+            resolved,
+            restore=None if args.restore in (None, "__LATEST__") else args.restore,
+            restore_latest=(args.restore == "__LATEST__"),
+            dry_run=args.dry_run,
+        )
     if args.command == "tmux-copy-last":
         return tmux_copy_last(args.pane_id)
     if args.command == "merge-claude-settings":

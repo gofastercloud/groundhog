@@ -60,9 +60,19 @@ Set the flag in `custom/config.yml` (or `ansible/vars/config.yml`):
 - `claude_code_enabled: true` — Seatbelt sandbox + widened deny rules + `ruff` hook + Groundhog skill link
 - `antigravity_enabled: true` — templated `trustedWorkspaces` + Groundhog skill link
 - `codex_enabled: true` — hardened `~/.codex/config.toml` scaffold (`workspace-write`, no network, `core` env policy) + Groundhog skill link
+- `agent_git_enabled: true` — 1-hour single-repo `agent-git`/`agent-gh` GitHub App broker & signing-only SSH key
+- `agency_enabled: true` — vendor-agnostic `groundhog-agency` skills (`/spec`, `/next`, `/handoff`) & `agency-{install,dash,report}` wrappers
 - `remote_login_enabled: true` — hardened `sshd` (`050-hardening.conf`, ML-KEM-768 PQC) + Mosh
 - `yubikey_enabled: true` — FIDO2 `pam_u2f` sudo auth
 - `immurok_enabled: true` — immurok fingerprint key sudo auth
+
+### Adopting Groundhog on an Existing Mac (Agent-Guided)
+When a user already has a configured Mac and wants to adopt Groundhog safely without breaking their setup:
+1. Run `./groundhog adopt --json` (read-only audit) and walk the user through every conflicting dotfile, extra Homebrew/VS Code entry, current Dock layout, and any secret warnings.
+2. Run `./groundhog adopt --apply` to snapshot all conflicting originals into `~/.backups/groundhog-adopt-<ts>/` (with `manifest.json`) and seed `custom/` + `*.local`.
+3. Semantically clean up the adopted files with the user: trim one-off/transitive packages from `custom/Brewfile`, merge shell aliases into `~/.zshrc.local` (stripping any hardcoded secrets into a secrets manager), and verify `custom/config.yml`.
+4. Roll out incrementally — always dry-run first (`./groundhog check --tags "<tag>"`) before applying (`dotfiles` → `dev-tools` → `homebrew` → `defaults` → `dock`).
+5. Remind the user they can roll back cleanly at any time via `./groundhog clean --restore`.
 
 ## 3. Non-Negotiable Guardrails
 

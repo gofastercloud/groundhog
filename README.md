@@ -87,6 +87,21 @@ If you have Touch ID enabled for `sudo`, running `ansible-playbook --ask-become-
 
 `./groundhog ansible` sidesteps that without weakening `sudo` with `NOPASSWD`: it enables `pipelining = True`, stages a `visudo`-checked temporary drop-in (`Defaults timestamp_type=global`) inside root-owned `/etc/sudoers.d/`, refreshes your ticket while the playbook runs, and deletes the drop-in plus runs `sudo -k` the moment the playbook exits or is interrupted.
 
+## Adopting Groundhog on an existing Mac
+
+Already have a working Mac with Homebrew packages, a custom Dock, SSH hosts, and shell tweaks? **Don't run `bootstrap.sh` blind** — use `./groundhog adopt` (ideally driven by your AI coding agent with `skills/groundhog/SKILL.md`):
+
+```nu
+./groundhog adopt               # Safe read-only audit (conflicts, Brewfile diff, Dock, secrets check)
+./groundhog adopt --apply       # Snapshots backups to ~/.backups/groundhog-adopt-<ts>/ + populates custom/ & *.local
+./groundhog check --tags "dotfiles,dev-tools"   # Preview incremental changes before applying
+./groundhog clean --restore     # Full rollback of Groundhog links + restored original dotfiles
+```
+
+- Portable items (extra Homebrew/VS Code packages, Dock layout, Git name/email) go into **`custom/`**.
+- Machine-local items (`signingkey`, existing `~/.ssh/config`, clean `~/.zshrc`) go into **`*.local`** (`~/.gitconfig.local`, `~/.ssh/config.local`, `~/.zshrc.local`).
+- Files containing potential secrets/tokens are **never copied** — they stay in your backup and are flagged for review.
+
 ## Local verification & Git hooks
 
 Verification is **local-first** (no paid GitHub Actions CI required; GitHub Actions only publishes the static Docs/Pages site). Local `pre-commit` and `pre-push` hooks act as the gate:
@@ -162,6 +177,8 @@ Off by default in `ansible/vars/default.config.yml`; turn on what you use in `cu
 ./groundhog check           # Dry-run Ansible (--check --diff) without modifying the system
 ./groundhog init-custom     # Scaffold a private overlay repo in custom/
 ./groundhog verify-custom   # Validate custom/ YAML, manifests, SSH keys, and hooks
+./groundhog adopt           # Dry-run audit of an existing Mac (--apply to snapshot + adopt, --json for agents)
+./groundhog clean           # Unstow Groundhog links/wrappers (--restore to roll back a pre-adopt backup)
 ./groundhog link            # Reconcile stow links, custom links, app copies, and hooks
 ./groundhog unlink          # Unstow all Stow-managed dotfile packages
 ./groundhog status          # Show what is linked and whether custom/ is active
