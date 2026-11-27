@@ -14,15 +14,21 @@
     mode: "0644"
     follow: false
 
-- name: Ensure Antigravity user skills directory exists
+- name: Ensure Antigravity user skills directories exist
   ansible.builtin.file:
-    path: "{{ home_dir }}/.gemini/antigravity/skills"
+    path: "{{ item }}"
     state: directory
     mode: "0755"
+  loop:
+    - "{{ home_dir }}/.gemini/antigravity/skills"
+    - "{{ home_dir }}/.gemini/config/skills"
 
 - name: Link Groundhog agent skill into Antigravity
   ansible.builtin.file:
     src: "{{ dotfiles_dir }}/skills/groundhog"
-    dest: "{{ home_dir }}/.gemini/antigravity/skills/groundhog"
+    dest: "{{ item }}/groundhog"
     state: link
     force: true
+  loop:
+    - "{{ home_dir }}/.gemini/antigravity/skills"
+    - "{{ home_dir }}/.gemini/config/skills"

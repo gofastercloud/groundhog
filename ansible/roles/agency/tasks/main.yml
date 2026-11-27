@@ -43,6 +43,7 @@
   loop:
     - "{{ home_dir }}/.claude/skills"
     - "{{ home_dir }}/.gemini/antigravity/skills"
+    - "{{ home_dir }}/.gemini/config/skills"
     - "{{ home_dir }}/.codex/skills"
 
 - name: Link canonical agency skills into Claude, Antigravity, and Codex
@@ -56,6 +57,7 @@
     agency_skill_dirs:
       - "{{ home_dir }}/.claude/skills"
       - "{{ home_dir }}/.gemini/antigravity/skills"
+      - "{{ home_dir }}/.gemini/config/skills"
       - "{{ home_dir }}/.codex/skills"
     agency_skill_names:
       - spec
