@@ -8,6 +8,8 @@
 # antigravity_enabled: true
 # codex_enabled: true
 # agent_git_enabled: true
+# agency_enabled: true
+# agency_repo_dir: "{{ home_dir }}/Code/projects/groundhog-agency"
 # yubikey_enabled: true
 # immurok_enabled: true
 

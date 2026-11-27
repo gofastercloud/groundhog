@@ -149,6 +149,7 @@ Off by default in `ansible/vars/default.config.yml`; turn on what you use in `cu
 | `antigravity_enabled` | `false` | Templates `~/.gemini/antigravity-cli/settings.json` with `trustedWorkspaces` |
 | `codex_enabled` | `false` | Scaffolds hardened `~/.codex/config.toml` (`workspace-write` sandbox, `network_access = false`, `core` env filtering) and links the Groundhog skill |
 | `agent_git_enabled` | `false` | Configures `~/.config/groundhog/agent-git.json`, installs `agent-git`/`agent-gh` 1-hour single-repo GitHub App wrappers, and links `skills/agent-git` |
+| `agency_enabled` | `false` | Links vendor-agnostic `groundhog-agency` skills (`spec`, `next`, `handoff`) into Claude Code, Antigravity, and Codex, and installs `agency-{install,dash,report}` wrappers |
 | `yubikey_enabled` | `false` | Enables the `yubikey` role and `pam_u2f` sudo auth (once `~/.config/Yubico/u2f_keys` exists) |
 | `immurok_enabled` | `false` | Enables the `immurok` role (keeps its SSH agent and Quick Fill off) and `pam_immurok` sudo auth |
 

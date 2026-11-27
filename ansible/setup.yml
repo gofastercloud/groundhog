@@ -101,6 +101,7 @@
     - {role: antigravity, tags: ['antigravity', 'agents'], when: antigravity_enabled | bool}
     - {role: codex, tags: ['codex', 'agents'], when: codex_enabled | bool}
     - {role: agent_git, tags: ['agent-git', 'agents'], when: agent_git_enabled | bool}
+    - {role: agency, tags: ['agency', 'agents'], when: agency_enabled | bool}
     - {role: yubikey, tags: ['yubikey'], when: yubikey_enabled | bool}
     - {role: immurok, tags: ['immurok'], when: immurok_enabled | bool}
 
