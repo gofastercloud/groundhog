@@ -28,6 +28,9 @@ claude_code_extra_deny: []
 antigravity_trusted_workspaces:
   - "{{ home_dir }}/Code"
 
+# Optional permission allowlist entries for ~/.gemini/antigravity-cli/settings.json.
+antigravity_permission_allow: []
+
 # Optional project directories pre-trusted in ~/.codex/config.toml when codex_enabled is true.
 codex_trusted_projects: []
 
