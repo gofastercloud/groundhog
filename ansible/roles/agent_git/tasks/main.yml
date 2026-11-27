@@ -39,6 +39,7 @@
   loop:
     - "{{ home_dir }}/.claude/skills"
     - "{{ home_dir }}/.gemini/antigravity/skills"
+    - "{{ home_dir }}/.gemini/config/skills"
     - "{{ home_dir }}/.codex/skills"
 
 - name: Link agent-git skill into Claude, Antigravity, and Codex
@@ -50,4 +51,5 @@
   loop:
     - "{{ home_dir }}/.claude/skills"
     - "{{ home_dir }}/.gemini/antigravity/skills"
+    - "{{ home_dir }}/.gemini/config/skills"
     - "{{ home_dir }}/.codex/skills"
